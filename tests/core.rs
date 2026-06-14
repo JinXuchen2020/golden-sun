@@ -43,22 +43,7 @@ fn test_camera_world_pos() {
     assert!((wy - 128.0).abs() < 0.001);
 }
 
-// ── Camera 移动/旋转 ──
-
-#[test]
-fn test_camera_move_forward() {
-    let mut cam = Camera::new(10.0, 10.0);
-    cam.move_forward(2.0);
-    assert!((cam.x - 12.0).abs() < 0.001);
-    assert!((cam.y - 10.0).abs() < 0.001);
-}
-
-#[test]
-fn test_camera_move_backward() {
-    let mut cam = Camera::new(10.0, 10.0);
-    cam.move_backward(3.0);
-    assert!((cam.x - 7.0).abs() < 0.001);
-}
+// ── Camera 旋转 ──
 
 #[test]
 fn test_camera_rotate() {
@@ -72,35 +57,6 @@ fn test_camera_rotate_wraparound() {
     let mut cam = Camera::new(0.0, 0.0);
     cam.rotate(std::f32::consts::TAU);
     assert!(cam.rotation < 0.001);
-}
-
-#[test]
-fn test_camera_set_target_and_lerp() {
-    let mut cam = Camera::new(0.0, 0.0);
-    cam.set_target(10.0, 20.0);
-    cam.update_lerp(1.0);
-    assert!(cam.x > 0.0);
-    assert!(cam.y > 0.0);
-}
-
-#[test]
-fn test_camera_snap_to_target() {
-    let mut cam = Camera::new(5.0, 5.0);
-    cam.set_target(100.0, 200.0);
-    cam.snap_to_target();
-    assert!((cam.x - 100.0).abs() < 0.001);
-    assert!((cam.y - 200.0).abs() < 0.001);
-}
-
-// ── Camera strafe ──
-
-#[test]
-fn test_camera_strafe_moves_perpendicular() {
-    let mut cam = Camera::new(0.0, 0.0);
-    cam.strafe(1.0);
-    // rotation=0 → strafe moves in +y direction (perpendicular)
-    assert!((cam.x).abs() < 0.001);
-    assert!((cam.y - 1.0).abs() < 0.001);
 }
 
 // ── InputBus 测试 ──
@@ -130,24 +86,6 @@ fn test_inputbus_consume_returns_false_when_absent() {
     let state = InputState::new();
     bus.poll(&state);
     assert!(!bus.consume(InputEvent::Confirm));
-}
-
-#[test]
-fn test_inputbus_has_any() {
-    let mut bus = InputBus::new();
-    let state = InputState::new();
-    bus.poll(&state);
-    assert!(!bus.has_any());
-}
-
-#[test]
-fn test_inputbus_has_event() {
-    let mut bus = InputBus::new();
-    let mut state = InputState::new();
-    state.start = true;
-    bus.poll(&state);
-    assert!(bus.has(InputEvent::Menu));
-    assert!(!bus.has(InputEvent::Confirm));
 }
 
 #[test]
@@ -195,15 +133,15 @@ fn test_mode7_camera_world_coords() {
 fn test_prepare_scanline_returns_none_above_horizon() {
     let cam = Camera::new(0.0, 0.0);
     let m7 = Mode7Camera::new(&cam);
-    assert!(m7.prepare_scanline(100.0, 640.0, 50.0).is_none());
-    assert!(m7.prepare_scanline(100.0, 640.0, 100.0).is_none());
+    assert!(m7.prepare_scanline(100.0, 50.0, 1.0, 0.0).is_none());
+    assert!(m7.prepare_scanline(100.0, 100.0, 1.0, 0.0).is_none());
 }
 
 #[test]
 fn test_prepare_scanline_returns_some_below_horizon() {
     let cam = Camera::new(0.0, 0.0);
     let m7 = Mode7Camera::new(&cam);
-    let ctx = m7.prepare_scanline(100.0, 640.0, 200.0);
+    let ctx = m7.prepare_scanline(100.0, 200.0, 1.0, 0.0);
     assert!(ctx.is_some());
     let ctx = ctx.unwrap();
     assert!((ctx.z - cam.height / 100.0).abs() < 0.001);

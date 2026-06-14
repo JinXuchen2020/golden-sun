@@ -25,6 +25,7 @@ pub struct InputState {
     pub left: bool,
     pub right: bool,
     pub a: bool,
+    pub a_held: bool,
     pub b: bool,
     pub start: bool,
     pub select: bool,
@@ -34,7 +35,7 @@ impl InputState {
     pub const fn new() -> Self {
         Self {
             up: false, down: false, left: false, right: false,
-            a: false, b: false, start: false, select: false,
+            a: false, a_held: false, b: false, start: false, select: false,
         }
     }
 
@@ -44,6 +45,7 @@ impl InputState {
         self.left = is_key_down(KeyCode::Left) || is_key_down(KeyCode::A);
         self.right = is_key_down(KeyCode::Right) || is_key_down(KeyCode::D);
         self.a = is_key_pressed(KeyCode::Z) || is_key_pressed(KeyCode::Enter);
+        self.a_held = is_key_down(KeyCode::Z) || is_key_down(KeyCode::Enter);
         self.b = is_key_pressed(KeyCode::X) || is_key_pressed(KeyCode::Escape);
         self.start = is_key_pressed(KeyCode::Space);
         self.select = is_key_pressed(KeyCode::LeftShift);
@@ -100,11 +102,6 @@ impl InputBus {
         if input.select  { self.events.push(InputEvent::Secondary); }
     }
 
-    #[must_use]
-    pub fn has(&self, event: InputEvent) -> bool {
-        self.events.contains(&event)
-    }
-
     pub fn consume(&mut self, event: InputEvent) -> bool {
         if let Some(pos) = self.events.iter().position(|&e| e == event) {
             self.events.remove(pos);
@@ -114,13 +111,4 @@ impl InputBus {
         }
     }
 
-    #[must_use]
-    pub fn remaining(&self) -> &[InputEvent] {
-        &self.events
-    }
-
-    #[must_use]
-    pub fn has_any(&self) -> bool {
-        !self.events.is_empty()
-    }
 }

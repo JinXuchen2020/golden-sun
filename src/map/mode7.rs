@@ -1,7 +1,7 @@
 //! Mode 7 逐行扫描渲染器
 
-use crate::engine::constants::{self, HORIZON_RATIO, MAP_HEIGHT, MAP_WIDTH, RENDER_TARGET_H, RENDER_TARGET_W};
-use crate::engine::mode7_camera::Mode7Camera;
+use crate::engine::constants::{self, HORIZON_RATIO, MAP_HEIGHT, MAP_WIDTH, RENDER_TARGET_H, RENDER_TARGET_W, WORLD_TO_TILE};
+use crate::engine::mode7_camera::{Mode7Camera, HALF_SCREEN_W};
 use crate::engine::Camera;
 use crate::engine::texture::TextureCache;
 use crate::map::tilemap;
@@ -30,15 +30,15 @@ pub fn render(textures: &mut TextureCache, camera: &Camera) {
 
     // 3. Mode 7 地面
     let m7 = Mode7Camera::new(camera);
-    let top_r = constants::SKY_COLOR_HORIZON.r * 255.0;
-    let top_g = constants::SKY_COLOR_HORIZON.g * 255.0;
-    let top_b = constants::SKY_COLOR_HORIZON.b * 255.0;
-    let mw = MAP_WIDTH as i32;
-    let mh = MAP_HEIGHT as i32;
-
+    let cos_r = camera.rotation.cos();
+    let sin_r = camera.rotation.sin();
+    let top_r = constants::SKY_R_HORIZON;
+    let top_g = constants::SKY_G_HORIZON;
+    let top_b = constants::SKY_B_HORIZON;
+    let horizon_y_f32 = horizon_y as f32;
     for sy in horizon_y..h {
         let sy_f = sy as f32;
-        let ctx = match m7.prepare_scanline(sy_f, w as f32, sy_f) {
+        let ctx = match m7.prepare_scanline(horizon_y_f32, sy_f, cos_r, sin_r) {
             Some(c) => c,
             None => continue,
         };
@@ -50,24 +50,28 @@ pub fn render(textures: &mut TextureCache, camera: &Camera) {
         let tg = top_g * inv;
         let tb = top_b * inv;
         let row_start = sy * w * 4;
+        let mut idx = row_start;
 
-        for sx in 0..w {
-            let sx_f = sx as f32;
-            let (world_x, world_z) = Mode7Camera::project_pixel(&ctx, sx_f);
+        let mut sx_rel = -(HALF_SCREEN_W);
+        for _ in 0..w {
+            let rel_x = sx_rel * ctx.scale;
+            let wx = ctx.world_x + rel_x * ctx.cos_r + ctx.rz_sin;
+            let wz = ctx.world_z + rel_x * ctx.sin_r + ctx.rz_cos;
 
-            let tx = super::world_to_tile_index(world_x);
-            let tz = super::world_to_tile_index(world_z);
-            let tc = if tx >= 0 && tx < mw && tz >= 0 && tz < mh {
+            let tx = (wx * WORLD_TO_TILE) as i32;
+            let tz = (wz * WORLD_TO_TILE) as i32;
+            let tc = if (tx as u32) < MAP_WIDTH && (tz as u32) < MAP_HEIGHT {
                 color_map[tz as usize][tx as usize]
             } else {
                 Color { r: 0.0, g: 0.0, b: 0.0, a: 1.0 }
             };
 
-            let idx = row_start + sx * 4;
             pixels[idx]     = (tc.r * fog_scale + tr) as u8;
             pixels[idx + 1] = (tc.g * fog_scale + tg) as u8;
             pixels[idx + 2] = (tc.b * fog_scale + tb) as u8;
             pixels[idx + 3] = 255;
+            idx += 4;
+            sx_rel += 1.0;
         }
     }
 }
@@ -76,12 +80,15 @@ pub fn render(textures: &mut TextureCache, camera: &Camera) {
 fn render_sky(pixels: &mut [u8], w: usize, h: usize, horizon_y: usize) {
     let top = constants::SKY_COLOR_TOP;
     let hoz = constants::SKY_COLOR_HORIZON;
+    let dr = hoz.r - top.r;
+    let dg = hoz.g - top.g;
+    let db = hoz.b - top.b;
 
     for y in 0..horizon_y.min(h) {
         let t = y as f32 / horizon_y.max(1) as f32;
-        let r = ((top.r + (hoz.r - top.r) * t) * 255.0) as u8;
-        let g = ((top.g + (hoz.g - top.g) * t) * 255.0) as u8;
-        let b = ((top.b + (hoz.b - top.b) * t) * 255.0) as u8;
+        let r = ((top.r + dr * t) * 255.0) as u8;
+        let g = ((top.g + dg * t) * 255.0) as u8;
+        let b = ((top.b + db * t) * 255.0) as u8;
 
         let row_start = y * w * 4;
         let row = &mut pixels[row_start..row_start + w * 4];

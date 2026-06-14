@@ -161,6 +161,7 @@ impl TileKind {
 }
 
 /// 将世界坐标（像素）转换为 tile 索引（i32，向下取整）
+#[inline]
 pub fn world_to_tile_index(world: f32) -> i32 {
     (world * WORLD_TO_TILE).floor() as i32
 }

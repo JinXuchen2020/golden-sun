@@ -23,7 +23,7 @@ pub use engine::mode7_camera::{Mode7Camera, ScanlineContext};
 pub use engine::resources::ResourceManager;
 pub use engine::storage::{create_storage, FsStorage, StorageBackend};
 pub use engine::texture::TextureCache;
-pub use engine::{Camera, FrameTime, GameState, InputState, RenderPhase, TransitionKind, WindowConfig};
+pub use engine::{Camera, FrameTime, GameState, InputState, TransitionKind, WindowConfig};
 pub use data::SaveData;
 pub use psynergy::{Element, PsynergyType};
 pub use scene::{SceneId, SceneRegistry};

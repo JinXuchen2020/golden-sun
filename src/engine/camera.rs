@@ -7,7 +7,7 @@
 
 use crate::engine::constants;
 
-/// 相机状态
+ /// 相机状态
 ///
 /// ## 字段说明
 /// - `x`, `y`: 2D 地图 tile 坐标（用于 Mode 7 时 y 映射为 3D 深度 Z）
@@ -19,8 +19,8 @@ pub struct Camera {
     pub y: f32,
     pub height: f32,
     pub rotation: f32,
-    pub(crate) target_x: f32,
-    pub(crate) target_y: f32,
+    pub target_x: f32,
+    pub target_y: f32,
     pub fov: f32,
 }
 
@@ -70,33 +70,6 @@ impl Camera {
         let speed = constants::CAMERA_LERP_SPEED;
         self.x += (self.target_x - self.x) * (speed * dt).min(1.0);
         self.y += (self.target_y - self.y) * (speed * dt).min(1.0);
-    }
-
-    pub fn set_target(&mut self, x: f32, y: f32) {
-        self.target_x = x;
-        self.target_y = y;
-    }
-
-    pub fn snap_to_target(&mut self) {
-        self.x = self.target_x;
-        self.y = self.target_y;
-    }
-
-    /// 沿当前朝向移动（tile 单位）
-    pub fn move_forward(&mut self, distance: f32) {
-        self.x += distance * self.rotation.cos();
-        self.y += distance * self.rotation.sin();
-    }
-
-    pub fn move_backward(&mut self, distance: f32) {
-        self.move_forward(-distance);
-    }
-
-    /// 横向平移（tile 单位）
-    pub fn strafe(&mut self, distance: f32) {
-        let angle = self.rotation + std::f32::consts::FRAC_PI_2;
-        self.x += distance * angle.cos();
-        self.y += distance * angle.sin();
     }
 
     /// 旋转视角（弧度），使用 `rem_euclid` 确保结果在 [0, 2π) 内
