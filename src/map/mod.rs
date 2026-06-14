@@ -1,9 +1,7 @@
-//! 地图系统 — 瓦片类型、调色板、地图数据
-//!
-//! 统一的 TileKind 枚举覆盖 Phase 1~3 全部需求：
-//! - Phase 1: Mode 7 世界渲染
-//! - Phase 2: NPC 碰撞检测
-//! - Phase 3: 精灵力地图交互
+//! 地图系统 — 瓦片类型、调色板、地图数据、Mode 7 渲染
+
+pub mod mode7;
+pub mod tilemap;
 
 use crate::engine::constants::{TILE_SIZE, WORLD_TO_TILE};
 

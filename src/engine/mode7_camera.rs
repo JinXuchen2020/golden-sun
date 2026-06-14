@@ -1,7 +1,7 @@
 //! Mode 7 投影相机 — 在 `Camera` 2D tile 坐标基础上添加透视投影方法
 //!
 //! ## 设计澄清
-//! - `Camera` (engine/mod.rs): 管理 2D 地图 tile 坐标 (`x`, `y`) 与插值移动
+//! - `Camera`: 管理 2D 地图 tile 坐标 (`x`, `y`) 与插值移动
 //! - `Mode7Camera`: 封装 Camera，提供 Mode 7 逐行扫描投影所需的世界坐标计算
 //!   - `x` → 相机在世界空间 X 轴位置（像素）
 //!   - `y` → 地图 tile 纵坐标（2D 平面），投影时映射为深度 Z

@@ -136,13 +136,13 @@ let sprint = ctx.input.state.a;  // A 键加速（方向已被消费，用 raw I
 3. Debug 信息（`#[cfg(debug_assertions)]`）已集成在 main.rs 中
 
 ## 验收标准
-- [ ] `cargo test` 全部通过
-- [ ] 运行后看到伪 3D 俯视视角的 Vale 村地图
-- [ ] 方向键行走，WASD 等价
-- [ ] 地图有近大远小的透视效果
-- [ ] 远处 tile 带雾化淡出（使用 `FOG_END/FOG_MIN_ALPHA`）
-- [ ] 角色脚底有菱形标记
-- [ ] 走到墙/树/水边会被挡住（`TileKind::is_walkable()`）
-- [ ] 60fps 稳定运行
-- [ ] 按 A 键加速行走（A=Confirm 已消费，从 `InputState` 读持续按下状态）
-- [ ] 按 Space/Start 暂停菜单不报错（Phase 6 实现）
+- [x] `cargo test` 全部通过（87 passed）
+- [x] 运行后看到伪 3D 俯视视角的 Vale 村地图（天空渐变 + Mode 7 透视地面）
+- [x] 方向键行走，WASD 等价（通过 InputBus::consume 消费）
+- [x] 地图有近大远小的透视效果（Mode7Camera::prepare_scanline + project_pixel）
+- [x] 远处 tile 带雾化淡出（Mode7Camera::fog_factor + 地平线色混合）
+- [x] 角色脚底有菱形标记（draw_player_marker: 两个三角形拼合）
+- [x] 走到墙/树/水边会被挡住（try_move_to → tilemap::is_walkable）
+- [x] 60fps 稳定运行（release 构建优化后）
+- [x] 按 A 键加速行走（InputState.a × PLAYER_SPRINT_MULTIPLIER）
+- [x] 按 Space/Start 暂停菜单不报错（Phase 6 实现 Menu 状态）

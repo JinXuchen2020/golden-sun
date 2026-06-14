@@ -70,6 +70,12 @@ pub const PLAYER_SPEED: f32 = 3.0;
 pub const PLAYER_SPRINT_MULTIPLIER: f32 = 1.8;
 /// 旋转速度（弧度/秒）
 pub const PLAYER_TURN_SPEED: f32 = 3.0;
+/// 玩家菱形标记颜色（金黄色）
+pub const PLAYER_MARKER_COLOR: Color = Color { r: 1.0, g: 220.0/255.0, b: 60.0/255.0, a: 1.0 };
+/// 玩家菱形标记半宽度（像素）
+pub const PLAYER_MARKER_SIZE: f32 = 8.0;
+/// 屏幕底部边距（像素）
+pub const SCREEN_MARGIN_BOTTOM: f32 = 20.0;
 
 // ── 精灵动画 ──
 /// 精灵像素尺寸（程序化绘制）

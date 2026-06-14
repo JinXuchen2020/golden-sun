@@ -191,6 +191,39 @@ fn test_mode7_camera_world_coords() {
     assert!((m7.world_z() - 640.0).abs() < 0.001);
 }
 
+#[test]
+fn test_prepare_scanline_returns_none_above_horizon() {
+    let cam = Camera::new(0.0, 0.0);
+    let m7 = Mode7Camera::new(&cam);
+    assert!(m7.prepare_scanline(100.0, 640.0, 50.0).is_none());
+    assert!(m7.prepare_scanline(100.0, 640.0, 100.0).is_none());
+}
+
+#[test]
+fn test_prepare_scanline_returns_some_below_horizon() {
+    let cam = Camera::new(0.0, 0.0);
+    let m7 = Mode7Camera::new(&cam);
+    let ctx = m7.prepare_scanline(100.0, 640.0, 200.0);
+    assert!(ctx.is_some());
+    let ctx = ctx.unwrap();
+    assert!((ctx.z - cam.height / 100.0).abs() < 0.001);
+}
+
+#[test]
+fn test_fog_factor_full_at_zero_depth() {
+    let cam = Camera::new(0.0, 0.0);
+    let m7 = Mode7Camera::new(&cam);
+    assert!((m7.fog_factor(0.0) - 1.0).abs() < 0.001);
+}
+
+#[test]
+fn test_fog_factor_min_at_max_depth() {
+    let cam = Camera::new(0.0, 0.0);
+    let m7 = Mode7Camera::new(&cam);
+    let f = m7.fog_factor(200.0);
+    assert!((f - 0.3).abs() < 0.001);
+}
+
 // ── TileKind 测试 ──
 
 #[test]

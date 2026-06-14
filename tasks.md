@@ -28,7 +28,7 @@ Phase 0 [项目骨架] → Phase 1 [Mode7世界地图] → Phase 2 [精灵与NPC
 | # | 阶段 | 状态 | 提示词文件 | 依赖 | 备注 |
 |---|------|------|------------|------|------|
 | 0 | 项目骨架初始化 | ✅ | `prompts/00_project_setup.md` | 无 | V6: 引擎模块拆分 + PsynergyType/Element预定义 + SceneId/SaveData/SceneRegistry |
-| 1 | Mode 7 世界地图 | ⬜ | `prompts/01_mode7_world_map.md` | Phase 0 | MVP：能走动的 Vale 村 |
+| 1 | Mode 7 世界地图 | ✅ | `prompts/01_mode7_world_map.md` | Phase 0 | tilemap(32×32 Vale村)+mode7渲染+碰撞检测+玩家移动+菱形标记 |
 | 2 | 精灵与 NPC | ⬜ | `prompts/02_sprite_entity.md` | Phase 0 | 帧动画 + NPC 交互（不依赖 Mode 7，可并行） |
 | 3 | 精灵力系统 | ⬜ | `prompts/03_psynergy.md` | Phase 0 | 7 种精灵力（PsynergyType 已预定义） |
 | 4 | 对话引擎 | ⬜ | `prompts/04_dialogue.md` | Phase 2 | 对话树 + 事件 |
