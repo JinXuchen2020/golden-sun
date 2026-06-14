@@ -6,12 +6,12 @@
 
 | 维度 | 说明 |
 |------|------|
-| 语言 | Rust (edition 2024) |
+| 语言 | Rust (edition 2024), MSRV 1.85 |
 | 框架 | macroquad 0.4 |
-| 渲染 | 纯软件 Mode 7（逐行扫描透视投影），每帧经 TextureCache 上传 GPU |
+| 渲染 | 纯软件 Mode 7（逐行扫描透视投影），每帧经 TextureCache `update()` 上传 GPU |
 | 平台 | **桌面端** (Windows/macOS/Linux) + **网页端** (wasm32) |
 | 状态 | Phase 0 基建完成 ✅，Phase 1 Mode 7 待开发 |
-| 测试 | 47 个 (BDD Gherkin 规格驱动) |
+| 测试 | 82 个 (19 unit + 25 core + 38 tilekind BDD + 2 ignore) |
 
 ## 快速开始
 
@@ -28,10 +28,14 @@ cargo build --target wasm32-unknown-unknown --release --lib
 ## 可交付验证
 
 ```bash
+# Linux/macOS
 bash verify.sh
+
+# Windows
+.\verify.ps1
 ```
 
-单个命令自动检查：编译质量、魔数扫描、测试覆盖、架构完整性、release 构建。
+单个命令自动检查 6 项：Build + Lint、魔数扫描、unwrap 检查、测试、架构完整性、release 构建。
 
 ## 阶段化开发 (Phase 0-6)
 
@@ -61,30 +65,39 @@ Phase 0 [项目骨架] → Phase 1 [Mode7地图] → Phase 2 [精灵NPC] → Pha
 
 ```
 golden-sun/
-├── Cargo.toml                # 依赖 (macroquad/serde/bincode/glam) + wasm32 target
-├── verify.sh                 # 一键可交付验证脚本
+├── Cargo.toml                # 依赖 (macroquad/serde) + LTO + unsafe_code deny
+├── Cargo.lock
+├── verify.sh                 # Linux/macOS 一键可交付验证
+├── verify.ps1                # Windows 一键可交付验证
 ├── tasks.md                  # 全局任务进度表
 ├── src/
-│   ├── lib.rs                # 库入口，声明 9 个模块
-│   ├── main.rs               # GameCtx + 状态路由主循环
+│   ├── lib.rs                # 库入口 9 模块 + re-export + deny(unsafe_code)
+│   ├── main.rs               # GameCtx + 状态路由 + SceneRegistry 交换机
 │   ├── engine/
-│   │   ├── mod.rs            # Camera / GameState / InputState / FrameTime / RenderPhase
-│   │   ├── constants.rs      # 全局常量 (40+)
+│   │   ├── mod.rs            # 模块声明 + 旧项 re-export
+│   │   ├── constants.rs      # 全局常量 (50+ Color 直接输出)
 │   │   ├── error.rs          # GameError + GameResult<T>
-│   │   ├── input.rs          # InputEvent 枚举 + InputBus 分发
-│   │   ├── resources.rs      # ResourceManager (纹理/音频生命周期)
-│   │   ├── storage.rs        # StorageBackend trait (桌面FsStorage / 网页LocalStorage)
-│   │   └── texture.rs        # TextureCache (GPU 纹理复用 + Nearest 滤镜)
-│   ├── map/                  # TileKind 22 种
-│   ├── entity/               # Entity 平铺字段设计 (ECS 预留)
-│   ├── psynergy/             # (Phase 3)
+│   │   ├── camera.rs         # Camera (tile/world 转换, lerp, validate)
+│   │   ├── mode7_camera.rs   # Mode7Camera + ScanlineContext (投影 + 雾化)
+│   │   ├── game_state.rs     # GameState 7 变体 + TransitionKind
+│   │   ├── frame_time.rs     # FrameTime (delta 裁剪保护)
+│   │   ├── render_phase.rs   # RenderPhase 枚举
+│   │   ├── window_config.rs  # WindowConfig
+│   │   ├── input.rs          # InputState + InputBus + InputEvent
+│   │   ├── resources.rs      # ResourceManager (泛型纹理/音频)
+│   │   ├── storage.rs        # StorageBackend trait (FsStorage / LocalStorage)
+│   │   └── texture.rs        # TextureCache (update 复用 + Nearest 滤镜)
+│   ├── map/                  # TileKind 22 种 (world_to_tile_index / tile_center)
+│   ├── entity/               # Entity 平铺字段 (Phase 2)
+│   ├── psynergy/             # PsynergyType 7 种 + Element 4 种 (Phase 3)
+│   ├── data/                 # SaveData (Serialize, Phase 6)
+│   ├── scene/                # SceneId + SceneRegistry (Phase 4)
 │   ├── battle/               # (Phase 5)
-│   ├── scene/                # (Phase 4)
 │   ├── ui/                   # (Phase 6)
 │   └── audio/                # (Phase 6)
 ├── tests/
-│   ├── features/             # BDD Gherkin 规格文件 (tilekind/psynergy/combat/dialogue/save)
-│   ├── core.rs               # 基础单元测试 (6)
+│   ├── features/             # BDD Gherkin 规格文件
+│   ├── core.rs               # 基础单元测试 (25)
 │   ├── tilekind_bdd.rs       # 瓦片 BDD 测试 (38)
 │   ├── psynergy_bdd.rs       # (Phase 3 骨架)
 │   ├── combat_bdd.rs         # (Phase 5 骨架)
@@ -98,17 +111,22 @@ golden-sun/
 
 ## Phase 0 基建里程碑
 
-| 迭代 | 成果 |
-|------|------|
-| V1 骨架 | 模块目录、共享类型、错误处理、依赖补齐 |
-| V2 架构 | TileKind 统一、坐标系统、InputBus、ResourceManager、constants、BDD |
-| V3 验证 | verify.sh、fix-workflow、可交付模板 |
-| V4 性能 | TextureCache、delta 裁剪、Nearest 滤镜 |
-| V5 双端 | StorageBackend trait、wasm 目标配置 |
-| V6 ECS预留 | Entity 平铺字段、prompt 约束 |
+| 轮次 | 修复数 | 关键变更 |
+|------|--------|----------|
+| R1 骨架 | 12 | TextureCache `update()`, TileKind `color()`→`Color`, 测试 6→23, PsynergyType/Element 骨架 |
+| R2 模块 | 11 | 模块拆分 1→11, SceneRegistry, SaveData, GameError, `#[non_exhaustive]`, verify.ps1 |
+| R3 质量 | 14 | 坐标重命名, Camera z→height, `project()`→`Option`, Debug derives, LTO, `rem_euclid` |
+| R4 测试 | 11 | verify.ps1 3 bug 修复, `crate-type="lib"`, 测试 66→82, 颜色常量, `#[must_use]` |
+| R5 安全 | 3 | `#[must_use]` x27, `const fn` x6, verify.ps1 clippy guard |
+| R6 收官 | 6 | `unsafe_code deny`, lib.rs lints, `pub(crate)` 约束, `Copy` derives, `_` 前缀统一 |
+
+**终态**: 82 tests, 0 警告, 6/6 verify, zero unsafe/panic/unwrap, zero `#[allow(clippy::*)]`。
 
 ## 开发约定
 
-- **每 Phase 一 commit**: `verify.sh PASS → git add -A && git commit -m "Phase N: <desc>"`
+- **每 Phase 一 commit**: `verify # PASS → git add -A && git commit -m "Phase N: <desc>"`
 - **prompt 即规格**: 验收标准是可执行的 checklist
 - **BDD 驱动**: 先写 `.feature` → 写 `_bdd.rs` → 写实现 → `cargo test` 全绿
+- **颜色全常量**: 禁止原始 RGBA 元组，全部通过 `constants.rs` 的 `Color` 常量引用
+- **坐标规范**: Camera 用 tile 单位 (x/y), 世界像素用 `tile_to_world()`; map 函数用 `world_to_tile_index()` / `tile_center()`
+- **输入统一**: 永远通过 `InputBus::consume()` / `has()` 访问输入，禁止直接读 macroquad `is_key_*`
