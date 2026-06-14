@@ -1,75 +1,114 @@
-# 黄金太阳 Rust 复刻 — 阶段化提示词工作空间
+# 黄金太阳 Rust 复刻 — Golden Sun GBA Recreation
 
-## 项目概览
+用 **Rust + macroquad** 复刻 GBA《黄金太阳》的伪 3D（Mode 7）世界地图与冒险体验。
 
-用 **Rust + macroquad** 复刻 GBA《黄金太阳 (Golden Sun)》的伪 3D（Mode 7）世界地图体验。
+## 快照
 
 | 维度 | 说明 |
 |------|------|
 | 语言 | Rust (edition 2024) |
 | 框架 | macroquad 0.4 |
-| 渲染 | 纯软件 Mode 7（逐行扫描透视投影） |
-| 产物 | 原生 exe，双击可运行 |
+| 渲染 | 纯软件 Mode 7（逐行扫描透视投影），每帧经 TextureCache 上传 GPU |
+| 平台 | **桌面端** (Windows/macOS/Linux) + **网页端** (wasm32) |
+| 状态 | Phase 0 基建完成 ✅，Phase 1 Mode 7 待开发 |
+| 测试 | 47 个 (BDD Gherkin 规格驱动) |
 
-## 提示词文件导航
-
-提示词按开发阶段编号，**Agent 应按顺序逐份加载执行**：
-
-| 文件 | 阶段 | 内容 | 依赖 |
-|------|------|------|------|
-| `prompts/00_project_setup.md` | Phase 0 | cargo 项目初始化、模块骨架、可运行窗口 | 无 |
-| `prompts/01_mode7_world_map.md` | Phase 1 | Mode 7 伪 3D 渲染器、tilemap、相机控制、玩家移动 | 00 |
-| `prompts/02_sprite_entity.md` | Phase 2 | 帧动画系统、NPC、A 键交互 | 01 |
-| `prompts/03_psynergy.md` | Phase 3 | 7 种精灵力系统、地图交互解谜 | 02 |
-| `prompts/04_dialogue.md` | Phase 4 | 对话树引擎、事件触发器、过场 | 02 |
-| `prompts/05_battle.md` | Phase 5 | 回合制战斗系统、伤害计算、AI | 01 |
-| `prompts/06_ui_audio.md` | Phase 6 | HUD、菜单、音频合成、存档、标题画面 | 00-05 |
-
-## 使用方式
-
-### Agent 自动执行
-
-1. 加载目标阶段的提示词文件
-2. 按文件中的"任务清单"逐项实现
-3. 每项完成执行 `cargo check` 验证
-4. 全部完成后执行 `cargo run` 验收
-5. 标记该阶段任务为完成，进入下一阶段
-
-### 手动执行
+## 快速开始
 
 ```bash
-cd golden-sun
-cargo run
+# 桌面端
+cargo build --release && cargo run
+
+# 网页端（需要 wasm32 target）
+rustup target add wasm32-unknown-unknown
+cargo build --target wasm32-unknown-unknown --release --lib
+# 产物: target/wasm32-unknown-unknown/release/golden_sun_lib.wasm
 ```
+
+## 可交付验证
+
+```bash
+bash verify.sh
+```
+
+单个命令自动检查：编译质量、魔数扫描、测试覆盖、架构完整性、release 构建。
+
+## 阶段化开发 (Phase 0-6)
+
+提示词逐阶段驱动 Agent 开发：
+
+```
+Phase 0 [项目骨架] → Phase 1 [Mode7地图] → Phase 2 [精灵NPC] → Phase 4 [对话引擎]
+                                                        ↓                     ↓
+                                            Phase 3 [精灵力系统]          (触发战斗)
+                                                        ↓                     ↓
+                                            Phase 5 [战斗系统] ←───────────────┘
+                                                        ↓
+                                            Phase 6 [UI/音频/标题]
+```
+
+| # | 阶段 | 状态 | prompt |
+|---|------|------|--------|
+| 0 | 项目骨架初始化 | ✅ | `prompts/00_project_setup.md` |
+| 1 | Mode 7 世界地图 | ⬜ | `prompts/01_mode7_world_map.md` |
+| 2 | 精灵与 NPC | ⬜ | `prompts/02_sprite_entity.md` |
+| 3 | 精灵力系统 | ⬜ | `prompts/03_psynergy.md` |
+| 4 | 对话引擎 | ⬜ | `prompts/04_dialogue.md` |
+| 5 | 战斗系统 | ⬜ | `prompts/05_battle.md` |
+| 6 | UI/音频/收尾 | ⬜ | `prompts/06_ui_audio.md` |
 
 ## 项目结构
 
 ```
 golden-sun/
-├── Cargo.toml          # 依赖配置
+├── Cargo.toml                # 依赖 (macroquad/serde/bincode/glam) + wasm32 target
+├── verify.sh                 # 一键可交付验证脚本
+├── tasks.md                  # 全局任务进度表
 ├── src/
-│   ├── main.rs          # 入口 + 主循环
-│   ├── engine/          # 渲染/输入/相机
-│   ├── map/             # tilemap + mode7
-│   ├── entity/          # 玩家/NPC/精灵
-│   ├── psynergy/        # 精灵力系统
-│   ├── battle/          # 战斗系统
-│   ├── scene/           # 对话/事件
-│   ├── ui/              # HUD/菜单
-│   ├── audio/           # 音频合成
-│   └── data/            # 游戏数据
-└── prompts/             # 阶段化提示词
+│   ├── lib.rs                # 库入口，声明 9 个模块
+│   ├── main.rs               # GameCtx + 状态路由主循环
+│   ├── engine/
+│   │   ├── mod.rs            # Camera / GameState / InputState / FrameTime / RenderPhase
+│   │   ├── constants.rs      # 全局常量 (40+)
+│   │   ├── error.rs          # GameError + GameResult<T>
+│   │   ├── input.rs          # InputEvent 枚举 + InputBus 分发
+│   │   ├── resources.rs      # ResourceManager (纹理/音频生命周期)
+│   │   ├── storage.rs        # StorageBackend trait (桌面FsStorage / 网页LocalStorage)
+│   │   └── texture.rs        # TextureCache (GPU 纹理复用 + Nearest 滤镜)
+│   ├── map/                  # TileKind 22 种
+│   ├── entity/               # Entity 平铺字段设计 (ECS 预留)
+│   ├── psynergy/             # (Phase 3)
+│   ├── battle/               # (Phase 5)
+│   ├── scene/                # (Phase 4)
+│   ├── ui/                   # (Phase 6)
+│   └── audio/                # (Phase 6)
+├── tests/
+│   ├── features/             # BDD Gherkin 规格文件 (tilekind/psynergy/combat/dialogue/save)
+│   ├── core.rs               # 基础单元测试 (6)
+│   ├── tilekind_bdd.rs       # 瓦片 BDD 测试 (38)
+│   ├── psynergy_bdd.rs       # (Phase 3 骨架)
+│   ├── combat_bdd.rs         # (Phase 5 骨架)
+│   ├── dialogue_bdd.rs       # (Phase 4 骨架)
+│   └── save_bdd.rs           # (Phase 6 骨架)
+├── prompts/                  # 7 个阶段化 Agent 提示词
+└── .workbuddy/
+    ├── memory/               # Agent 工作记忆
+    └── checklist/            # 可交付检查 + 自动修复指南
 ```
 
-## 构建
+## Phase 0 基建里程碑
 
-```bash
-# 检查编译
-cargo check
+| 迭代 | 成果 |
+|------|------|
+| V1 骨架 | 模块目录、共享类型、错误处理、依赖补齐 |
+| V2 架构 | TileKind 统一、坐标系统、InputBus、ResourceManager、constants、BDD |
+| V3 验证 | verify.sh、fix-workflow、可交付模板 |
+| V4 性能 | TextureCache、delta 裁剪、Nearest 滤镜 |
+| V5 双端 | StorageBackend trait、wasm 目标配置 |
+| V6 ECS预留 | Entity 平铺字段、prompt 约束 |
 
-# 运行
-cargo run
-```
+## 开发约定
 
-> 首次运行会自动从 crates.io 下载 macroquad 依赖，需要网络连接。
-# golden-sun
+- **每 Phase 一 commit**: `verify.sh PASS → git add -A && git commit -m "Phase N: <desc>"`
+- **prompt 即规格**: 验收标准是可执行的 checklist
+- **BDD 驱动**: 先写 `.feature` → 写 `_bdd.rs` → 写实现 → `cargo test` 全绿
