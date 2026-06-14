@@ -1,0 +1,232 @@
+//! 存档后端抽象 — 桌面端用文件系统，网页端用 localStorage
+//!
+//! ## 设计
+//! - `StorageBackend` trait 定义统一的存/取/删接口
+//! - `FsStorage` — desktop: 读写 `save.dat`（Phase 6 实现）
+//! - `LocalStorage` — wasm32: 读写浏览器 localStorage（Phase 6 实现）
+//! - Phase 0 提供骨架，Phase 6 填充完整逻辑
+//!
+//! ## 使用
+//! ```ignore
+//! // 桌面端
+//! let storage: Box<dyn StorageBackend> = FsStorage::new(".");
+//! storage.save("save", &bincode_serialized_data)?;
+//! let loaded = storage.load("save")?;
+//!
+//! // 网页端 (wasm32)
+//! let storage: Box<dyn StorageBackend> = LocalStorage::new("golden_sun");
+//! storage.save("save", &bincode_serialized_data)?;
+//! ```
+
+use crate::GameResult;
+
+/// 统一的存档存储接口
+pub trait StorageBackend {
+    /// 保存数据到指定 key
+    fn save(&mut self, key: &str, data: &[u8]) -> GameResult<()>;
+    /// 读取指定 key 的数据
+    fn load(&self, key: &str) -> GameResult<Option<Vec<u8>>>;
+    /// 检查 key 是否存在
+    fn exists(&self, key: &str) -> bool;
+    /// 删除指定 key 的数据
+    fn delete(&mut self, key: &str) -> GameResult<()>;
+}
+
+// ── 桌面端: 文件系统存储 ──
+
+/// 桌面端存储后端 — 读写本地文件
+///
+/// Phase 6 实现 std::fs 逻辑，当前为骨架。
+pub struct FsStorage {
+    save_dir: std::path::PathBuf,
+}
+
+impl FsStorage {
+    pub fn new(dir: impl Into<std::path::PathBuf>) -> Self {
+        Self {
+            save_dir: dir.into(),
+        }
+    }
+
+    fn file_path(&self, key: &str) -> std::path::PathBuf {
+        // 防御: key 必须是安全文件名
+        let safe_key: String = key
+            .chars()
+            .filter(|c| c.is_alphanumeric() || *c == '_' || *c == '-' || *c == '.')
+            .collect();
+        self.save_dir.join(format!("{safe_key}.dat"))
+    }
+}
+
+impl StorageBackend for FsStorage {
+    fn save(&mut self, key: &str, data: &[u8]) -> GameResult<()> {
+        let path = self.file_path(key);
+        // Phase 6: std::fs::write(path, data)?;
+        let _ = (path, data);
+        Ok(())
+    }
+
+    fn load(&self, key: &str) -> GameResult<Option<Vec<u8>>> {
+        let path = self.file_path(key);
+        // Phase 6:
+        // if path.exists() {
+        //     Ok(Some(std::fs::read(path)?))
+        // } else {
+        //     Ok(None)
+        // }
+        let _ = path;
+        Ok(None)
+    }
+
+    fn exists(&self, key: &str) -> bool {
+        self.file_path(key).exists()
+    }
+
+    fn delete(&mut self, key: &str) -> GameResult<()> {
+        let path = self.file_path(key);
+        // Phase 6: if path.exists() { std::fs::remove_file(path)?; }
+        let _ = path;
+        Ok(())
+    }
+}
+
+// ── 网页端: localStorage 存储 ──
+
+/// 网页端存储后端 — 浏览器 localStorage
+///
+/// 仅在 `target_arch = "wasm32"` 时编译。
+/// Phase 6 实现 JSON 序列化逻辑，当前为骨架。
+#[cfg(target_arch = "wasm32")]
+pub struct LocalStorage {
+    prefix: String,
+}
+
+#[cfg(target_arch = "wasm32")]
+impl LocalStorage {
+    pub fn new(prefix: &str) -> Self {
+        Self {
+            prefix: prefix.to_string(),
+        }
+    }
+
+    fn full_key(&self, key: &str) -> String {
+        format!("{}_{}", self.prefix, key)
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+impl StorageBackend for LocalStorage {
+    fn save(&mut self, key: &str, data: &[u8]) -> GameResult<()> {
+        let storage = web_sys::window()
+            .ok_or(crate::GameError::LogicError("no window".into()))?
+            .local_storage()
+            .map_err(|_| crate::GameError::SaveError("localStorage不可用".into()))?
+            .ok_or(crate::GameError::SaveError("localStorage为null".into()))?;
+
+        // base64 编码绕过 localStorage 的 UTF-16 限制
+        let encoded = base64_encode(data);
+        storage
+            .set_item(&self.full_key(key), &encoded)
+            .map_err(|_| crate::GameError::SaveError("写入localStorage失败".into()))?;
+        Ok(())
+    }
+
+    fn load(&self, key: &str) -> GameResult<Option<Vec<u8>>> {
+        let storage = web_sys::window()
+            .ok_or(crate::GameError::LogicError("no window".into()))?
+            .local_storage()
+            .map_err(|_| crate::GameError::SaveError("localStorage不可用".into()))?
+            .ok_or(crate::GameError::SaveError("localStorage为null".into()))?;
+
+        match storage.get_item(&self.full_key(key)) {
+            Ok(Some(encoded)) => {
+                let data = base64_decode(&encoded)
+                    .ok_or(crate::GameError::SaveError("base64解码失败".into()))?;
+                Ok(Some(data))
+            }
+            Ok(None) => Ok(None),
+            Err(_) => Ok(None),
+        }
+    }
+
+    fn exists(&self, key: &str) -> bool {
+        web_sys::window()
+            .and_then(|w| w.local_storage().ok().flatten())
+            .map(|s| s.get_item(&self.full_key(key)).ok().flatten().is_some())
+            .unwrap_or(false)
+    }
+
+    fn delete(&mut self, key: &str) -> GameResult<()> {
+        if let Some(storage) = web_sys::window()
+            .and_then(|w| w.local_storage().ok().flatten())
+        {
+            storage
+                .remove_item(&self.full_key(key))
+                .map_err(|_| crate::GameError::SaveError("删除失败".into()))?;
+        }
+        Ok(())
+    }
+}
+
+// ── 帮助函数 ──
+
+/// 简易 base64 编码（适用小数据量存档）
+#[cfg(target_arch = "wasm32")]
+fn base64_encode(data: &[u8]) -> String {
+    // Phase 6: 使用 base64 crate 或内置实现
+    // 当前用 hex 占位
+    fn hex(data: &[u8]) -> String {
+        data.iter().map(|b| format!("{b:02x}")).collect()
+    }
+    hex(data)
+}
+
+#[cfg(target_arch = "wasm32")]
+fn base64_decode(_s: &str) -> Option<Vec<u8>> {
+    // Phase 6: 反解 base64/hex
+    None
+}
+
+// ── 工厂函数 ──
+
+/// 根据编译目标创建对应的 StorageBackend
+pub fn create_storage() -> Box<dyn StorageBackend> {
+    #[cfg(target_arch = "wasm32")]
+    {
+        Box::new(LocalStorage::new("golden_sun"))
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        Box::new(FsStorage::new("."))
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[allow(clippy::unwrap_used)]
+    fn fs_storage_file_path_is_safe() {
+        let storage = FsStorage::new(".");
+        let path = storage.file_path("my_save");
+        let filename = path.file_name().unwrap().to_str().unwrap();
+        assert_eq!(filename, "my_save.dat");
+    }
+
+    #[test]
+    fn fs_storage_sanitizes_special_chars() {
+        let storage = FsStorage::new(".");
+        let path = storage.file_path("bad/../../etc");
+        let filename = path.file_name().unwrap().to_str().unwrap();
+        assert!(!filename.contains('/'));
+        assert!(filename.starts_with("bad"));
+    }
+
+    #[test]
+    fn fs_storage_exists_nonexistent() {
+        let storage = FsStorage::new(".");
+        assert!(!storage.exists("nonexistent_save_xyz"));
+    }
+}
