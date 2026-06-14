@@ -37,6 +37,7 @@ pub trait StorageBackend {
 /// 桌面端存储后端 — 读写本地文件
 ///
 /// Phase 6 实现 std::fs 逻辑，当前为骨架。
+#[derive(Debug)]
 pub struct FsStorage {
     save_dir: std::path::PathBuf,
 }
@@ -60,6 +61,7 @@ impl FsStorage {
 
 impl StorageBackend for FsStorage {
     fn save(&mut self, key: &str, data: &[u8]) -> GameResult<()> {
+        ensure_save_dir(&self.save_dir)?;
         let path = self.file_path(key);
         // Phase 6: std::fs::write(path, data)?;
         let _ = (path, data);
@@ -97,6 +99,7 @@ impl StorageBackend for FsStorage {
 /// 仅在 `target_arch = "wasm32"` 时编译。
 /// Phase 6 实现 JSON 序列化逻辑，当前为骨架。
 #[cfg(target_arch = "wasm32")]
+#[derive(Debug)]
 pub struct LocalStorage {
     prefix: String,
 }
@@ -123,8 +126,8 @@ impl StorageBackend for LocalStorage {
             .map_err(|_| crate::GameError::SaveError("localStorage不可用".into()))?
             .ok_or(crate::GameError::SaveError("localStorage为null".into()))?;
 
-        // base64 编码绕过 localStorage 的 UTF-16 限制
-        let encoded = base64_encode(data);
+        // hex 编码绕过 localStorage 的 UTF-16 限制
+        let encoded = hex_encode(data);
         storage
             .set_item(&self.full_key(key), &encoded)
             .map_err(|_| crate::GameError::SaveError("写入localStorage失败".into()))?;
@@ -140,8 +143,8 @@ impl StorageBackend for LocalStorage {
 
         match storage.get_item(&self.full_key(key)) {
             Ok(Some(encoded)) => {
-                let data = base64_decode(&encoded)
-                    .ok_or(crate::GameError::SaveError("base64解码失败".into()))?;
+                let data = hex_decode(&encoded)
+                    .ok_or(crate::GameError::SaveError("hex解码失败".into()))?;
                 Ok(Some(data))
             }
             Ok(None) => Ok(None),
@@ -170,24 +173,53 @@ impl StorageBackend for LocalStorage {
 
 // ── 帮助函数 ──
 
-/// 简易 base64 编码（适用小数据量存档）
+/// hex 编码 — 将二进制数据转为十六进制字符串
+/// 用于 localStorage 存储（wasm32，避免 UTF-16 编码问题）
+/// Phase 6 可替换为更紧凑的 base64 编码
 #[cfg(target_arch = "wasm32")]
-fn base64_encode(data: &[u8]) -> String {
-    // Phase 6: 使用 base64 crate 或内置实现
-    // 当前用 hex 占位
-    fn hex(data: &[u8]) -> String {
-        data.iter().map(|b| format!("{b:02x}")).collect()
+fn hex_encode(data: &[u8]) -> String {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut s = String::with_capacity(data.len() * 2);
+    for b in data {
+        s.push(HEX[(b >> 4) as usize] as char);
+        s.push(HEX[(b & 0x0f) as usize] as char);
     }
-    hex(data)
+    s
 }
 
+/// hex 解码
 #[cfg(target_arch = "wasm32")]
-fn base64_decode(_s: &str) -> Option<Vec<u8>> {
-    // Phase 6: 反解 base64/hex
-    None
+fn hex_decode(s: &str) -> Option<Vec<u8>> {
+    if s.len() % 2 != 0 { return None; }
+    (0..s.len())
+        .step_by(2)
+        .map(|i| u8::from_str_radix(&s[i..i + 2], 16).ok())
+        .collect()
 }
 
 // ── 工厂函数 ──
+
+/// 确定桌面端存档目录（仅计算路径，不创建目录）
+fn default_save_dir() -> std::path::PathBuf {
+    // 优先 APPDATA (Windows)
+    if let Ok(dir) = std::env::var("APPDATA") {
+        return std::path::PathBuf::from(dir).join("golden-sun");
+    }
+    // 次优先 XDG_DATA_HOME / HOME (Linux/macOS)
+    if let Ok(dir) = std::env::var("XDG_DATA_HOME") {
+        return std::path::PathBuf::from(dir).join("golden-sun");
+    }
+    if let Ok(dir) = std::env::var("HOME") {
+        return std::path::PathBuf::from(dir).join(".local/share/golden-sun");
+    }
+    // fallback: 可执行文件同级 save 目录
+    std::path::PathBuf::from("./save")
+}
+
+/// 确保存档目录存在（写入时按需创建，通过 From<io::Error> 传播错误）
+fn ensure_save_dir(dir: &std::path::Path) -> GameResult<()> {
+    Ok(std::fs::create_dir_all(dir)?)
+}
 
 /// 根据编译目标创建对应的 StorageBackend
 pub fn create_storage() -> Box<dyn StorageBackend> {
@@ -197,21 +229,19 @@ pub fn create_storage() -> Box<dyn StorageBackend> {
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
-        Box::new(FsStorage::new("."))
+        Box::new(FsStorage::new(default_save_dir()))
     }
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
 
     #[test]
-    #[allow(clippy::unwrap_used)]
     fn fs_storage_file_path_is_safe() {
         let storage = FsStorage::new(".");
         let path = storage.file_path("my_save");
-        let filename = path.file_name().unwrap().to_str().unwrap();
+        let filename = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
         assert_eq!(filename, "my_save.dat");
     }
 
@@ -219,7 +249,7 @@ mod tests {
     fn fs_storage_sanitizes_special_chars() {
         let storage = FsStorage::new(".");
         let path = storage.file_path("bad/../../etc");
-        let filename = path.file_name().unwrap().to_str().unwrap();
+        let filename = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
         assert!(!filename.contains('/'));
         assert!(filename.starts_with("bad"));
     }

@@ -37,5 +37,17 @@ impl From<std::io::Error> for GameError {
     }
 }
 
+impl From<&str> for GameError {
+    fn from(msg: &str) -> Self {
+        GameError::LogicError(msg.to_string())
+    }
+}
+
+impl From<String> for GameError {
+    fn from(msg: String) -> Self {
+        GameError::LogicError(msg)
+    }
+}
+
 /// 便捷类型别名
 pub type GameResult<T> = Result<T, GameError>;

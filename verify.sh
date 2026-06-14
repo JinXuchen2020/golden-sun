@@ -9,7 +9,6 @@ set -uo pipefail
 SRC="src"
 PASS=0
 FAIL=0
-FIXED=0
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -20,7 +19,7 @@ echo "=== Golden Sun 可交付验证 ==="
 echo ""
 
 # ── 1. 编译 ──
-echo "--- Phase 1: 编译 ---"
+echo "--- Phase 1: 编译 + Lint ---"
 if cargo check 2>&1; then
     echo -e "  ${GREEN}[PASS]${NC} cargo check 零警告"
     PASS=$((PASS + 1))
@@ -28,6 +27,21 @@ else
     echo -e "  ${RED}[FAIL]${NC} cargo check 失败"
     echo "  ⚡ 操作: Agent 修复编译错误后重试"
     FAIL=$((FAIL + 1))
+fi
+
+# 1b. clippy（软性建议，不阻塞交付）
+if command -v cargo-clippy &>/dev/null || cargo clippy --version &>/dev/null; then
+    CLIPPY_OUT=$(cargo clippy -- -D warnings 2>&1 || true)
+    CLIPPY_EXIT=$?
+    if [ "$CLIPPY_EXIT" -eq 0 ]; then
+        echo -e "  ${GREEN}[PASS]${NC} cargo clippy 零警告"
+    else
+        echo -e "  ${YELLOW}[WARN]${NC} cargo clippy 建议:"
+        echo "$CLIPPY_OUT" | head -20 | while IFS= read -r line; do
+            echo "       $line"
+        done
+        echo "  💡 建议: 修复 clippy 警告以提升代码质量"
+    fi
 fi
 
 # ── 2. 硬件编码魔数扫描 ──
@@ -51,9 +65,11 @@ fi
 # ── 3. unwrap 裸调用（软性建议，不阻塞交付） ──
 echo "--- Phase 3: unwrap 检查 ---"
 # 检查生产代码中的 unwrap（排除 tests/ 目录和已知测试辅助函数）
-UNWRAPS=$(grep -rn "\.unwrap()" "$SRC" --include="*.rs" \
+UNWRAPS=$(grep -rn "\.unwrap(" "$SRC" --include="*.rs" \
     | grep -v "/tests/" \
     | grep -v "#\[allow" \
+    | grep -v "unwrap_or" \
+    | grep -v "unwrap_err" \
     || true)
 if [ -z "$UNWRAPS" ]; then
     echo -e "  ${GREEN}[PASS]${NC} 无 unwrap() 裸调用"

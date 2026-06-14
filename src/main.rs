@@ -2,23 +2,21 @@ use golden_sun::engine::{Camera, FrameTime, GameState, InputState};
 use golden_sun::{InputBus, InputEvent, ResourceManager, TextureCache, WindowConfig, create_storage};
 use golden_sun::engine::storage::StorageBackend;
 use golden_sun::constants::{RENDER_TARGET_W, RENDER_TARGET_H};
-use golden_sun::GameResult;
+use golden_sun::{GameResult, SceneId, SceneRegistry};
 use macroquad::prelude::*;
 
 /// 全局游戏上下文
 struct GameCtx {
-    #[allow(dead_code)]
     config: WindowConfig,
     state: GameState,
+    scene: SceneRegistry,
     camera: Camera,
     input: InputState,
     input_bus: InputBus,
     time: FrameTime,
     _resources: ResourceManager,
-    #[allow(dead_code)]
-    textures: TextureCache,
-    #[allow(dead_code)]
-    storage: Box<dyn StorageBackend>,
+    _textures: TextureCache,
+    _storage: Box<dyn StorageBackend>,
 }
 
 impl GameCtx {
@@ -26,13 +24,14 @@ impl GameCtx {
         Self {
             config: WindowConfig::default(),
             state: GameState::Title,
+            scene: SceneRegistry::new(SceneId::Title),
             camera: Camera::new(0.0, 0.0),
             input: InputState::new(),
             input_bus: InputBus::new(),
             time: FrameTime::new(),
             _resources: ResourceManager::new(),
-            textures: TextureCache::new(RENDER_TARGET_W, RENDER_TARGET_H),
-            storage: create_storage(),
+            _textures: TextureCache::new(RENDER_TARGET_W, RENDER_TARGET_H),
+            _storage: create_storage(),
         }
     }
 
@@ -42,8 +41,14 @@ impl GameCtx {
         self.input.poll();
         self.input_bus.poll(&self.input);
 
+        debug_assert!(self.camera.validate(), "Camera 参数无效 — height={}, fov={}",
+            self.camera.height, self.camera.fov);
+
+        // 提交待处理的场景切换
+        self.scene.commit_switch();
+
         // 场景过渡：所有输入锁定
-        if self.state == GameState::Transition {
+        if self.state.is_transition() {
             return Ok(());
         }
 
@@ -81,50 +86,27 @@ impl GameCtx {
                     self.state = GameState::WorldMap;
                 }
             }
-            GameState::Transition => {
+            GameState::Transition { .. } => {
                 // 过场动画期间不处理输入（已在顶部拦截）
             }
+            // 未来 Phase 新增状态时的安全 fallback
+            _ => {}
         }
         Ok(())
     }
 
     /// 每帧绘制
     fn draw(&self) {
-        clear_background(Color::from_rgba(86, 130, 36, 255));
+        clear_background(golden_sun::constants::BG_COLOR);
 
         match self.state {
-            GameState::Title => {
-                self.draw_title();
-            }
+            GameState::Title => self.draw_title(),
             GameState::WorldMap => {
                 self.draw_world_map();
                 #[cfg(debug_assertions)]
                 self.draw_debug();
             }
-            GameState::Dialog | GameState::Battle | GameState::Menu
-            | GameState::Psynergy | GameState::Transition => {
-                draw_text(
-                    "Phase pending...",
-                    10.0,
-                    30.0,
-                    24.0,
-                    Color::from_rgba(255, 200, 100, 255),
-                );
-                draw_text(
-                    &format!("State: {:?}", self.state),
-                    10.0,
-                    60.0,
-                    16.0,
-                    LIGHTGRAY,
-                );
-                draw_text(
-                    &format!("FPS: {}", get_fps()),
-                    10.0,
-                    80.0,
-                    16.0,
-                    LIGHTGRAY,
-                );
-            }
+            _ => self.draw_placeholder(),
         }
     }
 
@@ -141,26 +123,31 @@ impl GameCtx {
             100.0,
             260.0,
             20.0,
-            Color::from_rgba(200, 220, 255, 255),
+            golden_sun::constants::TITLE_TEXT_COLOR,
+        );
+    }
+
+    fn draw_placeholder(&self) {
+        draw_text(
+            "Phase pending...",
+            10.0, 30.0, 24.0,
+            golden_sun::constants::PLACEHOLDER_TEXT_COLOR,
+        );
+        draw_text(
+            format!("State: {:?}", self.state),
+            10.0, 60.0, 16.0, LIGHTGRAY,
+        );
+        draw_text(
+            format!("FPS: {}", get_fps()),
+            10.0, 80.0, 16.0, LIGHTGRAY,
         );
     }
 
     fn draw_world_map(&self) {
-        // Phase 1: Mode 7 渲染流程
-        // 1. 获取 pixels = self.textures.world_map_image_mut().get_image_data_mut()
-        // 2. 逐行扫描写入像素 (mode7::render)
-        // 3. 上传: self.textures.upload_world_map()
-        // 4. 绘制: draw_texture(self.textures.world_map_texture(), 0, 0, WHITE)
-        // 5. 叠加 NPC / 特效层
-        //
-        // 渲染层序: Sky → Terrain → EntitiesLow → Entities → Effects → Overlay → HUD
         draw_text("World Map (Phase 1)", 10.0, 30.0, 24.0, WHITE);
         draw_text(
-            &format!("Camera: ({:.1}, {:.1})", self.camera.x, self.camera.y),
-            10.0,
-            60.0,
-            16.0,
-            LIGHTGRAY,
+            format!("Camera: ({:.1}, {:.1})", self.camera.x, self.camera.y),
+            10.0, 60.0, 16.0, LIGHTGRAY,
         );
     }
 
@@ -168,24 +155,21 @@ impl GameCtx {
     fn draw_debug(&self) {
         let (wx, wy) = self.camera.world_pos();
         draw_text(
-            &format!(
+            format!(
                 "FPS: {} | Tile: {:?} | World: ({:.0}, {:.0}) | Rot: {:.2}",
                 get_fps(),
                 self.camera.tile_index(),
-                wx,
-                wy,
-                self.camera.rotation
+                wx, wy, self.camera.rotation
             ),
-            10.0,
-            self.config.height - 20.0,
-            14.0,
-            Color::from_rgba(255, 255, 100, 180),
+            10.0, self.config.height - 20.0, 14.0,
+            golden_sun::constants::DEBUG_TEXT_COLOR,
         );
     }
 }
 
 #[macroquad::main("Golden Sun - Rust Edition")]
 async fn main() -> GameResult<()> {
+    // vsync 已默认启用；macroquad 0.4 set_target_fps 不可用，Phase 1 如需帧率限制再处理
     let mut ctx = GameCtx::new();
 
     loop {

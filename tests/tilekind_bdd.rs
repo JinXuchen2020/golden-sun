@@ -106,10 +106,10 @@ fn each_tile_has_unique_color() {
                  Flower, Roof, Vine, Seed, Ice, PushBlock,
                  Windmill, DarkArea, HiddenChest, VineClimbable];
     for t in &tiles {
-        let (r, g, b) = t.color();
+        let col = t.color();
         assert!(
-            r > 0 || g > 0 || b > 0,
-            "Tile {:?} has black color (0,0,0)", t
+            col.r > 0.0 || col.g > 0.0 || col.b > 0.0,
+            "Tile {:?} has black color", t
         );
     }
 }

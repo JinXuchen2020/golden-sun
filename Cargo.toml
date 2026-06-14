@@ -2,19 +2,33 @@
 name = "golden-sun"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.85"
 description = "Golden Sun GBA recreation in Rust + macroquad (Mode 7 pseudo-3D)"
+authors = ["golden-sun-dev"]
+license = "MIT"
+keywords = ["golden-sun", "gba", "macroquad", "game", "rpg"]
+categories = ["game", "graphics", "simulation"]
 
 [lib]
-# 桌面端只需 rlib；wasm32 构建时需要 cdylib
+# "lib" = 自动选择: 桌面端用 rlib, wasm32 用 cdylib
 # wasm 构建命令: cargo build --target wasm32-unknown-unknown --lib
-crate-type = ["rlib"]
+crate-type = ["lib"]
 
 [dependencies]
 macroquad = "0.4"
 serde = { version = "1", features = ["derive"] }
-bincode = "1"
-glam = "0.29"
+# glam 由 macroquad 内部提供 (0.27)，无需直接依赖
+# bincode: Phase 6 序列化存档时按需引入
+# base64 crate 暂不引入 — wasm32 LocalStorage 用简易 hex 编码
+# Phase 6 如需更紧凑的存档编码，可取消注释：
+# base64 = "0.22"
 
 # ── wasm32 专用依赖（桌面端不编译） ──
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 web-sys = { version = "0.3", features = ["Window", "Storage"] }
+
+[lints.rust]
+unsafe_code = "deny"
+
+[profile.release]
+lto = "thin"

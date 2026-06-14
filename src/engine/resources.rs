@@ -32,12 +32,19 @@ pub struct AudioSample {
 }
 
 /// 全局资源管理器
+#[derive(Debug)]
 pub struct ResourceManager {
     textures: HashMap<String, TextureData>,
     audio: HashMap<String, AudioSample>,
     /// 程序化生成的纹理注册表（存档恢复时需重建）
     procedural_ids: Vec<String>,
     next_handle: u64,
+}
+
+impl Default for ResourceManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ResourceManager {
@@ -66,6 +73,7 @@ impl ResourceManager {
     }
 
     /// 获取纹理（不可变引用）
+    #[must_use]
     pub fn get_texture(&self, id: &str) -> Option<&TextureData> {
         self.textures.get(id)
     }
@@ -90,6 +98,7 @@ impl ResourceManager {
     }
 
     /// 获取音频样本
+    #[must_use]
     pub fn get_audio(&self, id: &str) -> Option<&AudioSample> {
         self.audio.get(id)
     }
@@ -109,5 +118,61 @@ impl ResourceManager {
             self.textures.remove(id);
         }
         self.procedural_ids.clear();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn sample_texture() -> TextureData {
+        TextureData { pixels: vec![0u8; 16], width: 2, height: 2 }
+    }
+
+    fn sample_audio() -> AudioSample {
+        AudioSample { data: vec![0.0; 100], sample_rate: 44100 }
+    }
+
+    #[test]
+    fn new_manager_is_empty() {
+        let rm = ResourceManager::new();
+        assert!(rm.get_texture("any").is_none());
+    }
+
+    #[test]
+    fn store_and_get_texture() {
+        let mut rm = ResourceManager::new();
+        let tex = sample_texture();
+        rm.store_texture("test", tex.clone());
+        let data = rm.get_texture("test").expect("texture should exist");
+        assert_eq!(data.width, 2);
+    }
+
+    #[test]
+    fn store_and_get_audio() {
+        let mut rm = ResourceManager::new();
+        let audio = sample_audio();
+        rm.store_audio("bgm", audio);
+        assert!(rm.get_audio("bgm").is_some());
+        assert!(rm.get_audio("nonexistent").is_none());
+    }
+
+    #[test]
+    fn unload_texture_removes_it() {
+        let mut rm = ResourceManager::new();
+        rm.store_texture("test", sample_texture());
+        rm.unload_texture("test");
+        assert!(rm.get_texture("test").is_none());
+    }
+
+    #[test]
+    fn clear_removes_all() {
+        let mut rm = ResourceManager::new();
+        rm.store_texture("a", sample_texture());
+        rm.store_audio("b", sample_audio());
+        rm.mark_procedural("a");
+        rm.clear();
+        assert!(rm.get_texture("a").is_none());
+        assert!(rm.get_audio("b").is_none());
     }
 }

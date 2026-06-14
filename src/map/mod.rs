@@ -5,9 +5,11 @@
 //! - Phase 2: NPC 碰撞检测
 //! - Phase 3: 精灵力地图交互
 
-use crate::engine::constants::TILE_SIZE;
+use crate::engine::constants::{TILE_SIZE, WORLD_TO_TILE};
 
 // ── 瓦片类型（17 种，覆盖 Phase 1~3） ──
+
+use macroquad::prelude::Color;
 
 /// 瓦片类型 — 单一真源，各 Phase 在此基础上扩展
 ///
@@ -18,6 +20,7 @@ use crate::engine::constants::TILE_SIZE;
 /// | 2     | (碰撞检测复用) |
 /// | 3     | Vine, Seed, Ice, PushBlock (精灵力交互) |
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum TileKind {
     /// 0: 空白/不可见（地图边缘）
     Void,
@@ -71,6 +74,7 @@ pub enum TileKind {
 
 impl TileKind {
     /// 从 u8 数字解码（Phase 1 地图数据用）
+    #[must_use]
     pub const fn from_u8(v: u8) -> Self {
         match v {
             0 => TileKind::Void,
@@ -100,9 +104,9 @@ impl TileKind {
     }
 
     /// 碰撞检测：该 tile 是否可以行走通过
+    #[must_use]
     pub const fn is_walkable(self) -> bool {
-        match self {
-            TileKind::Grass
+        matches!(self, TileKind::Grass
             | TileKind::Dirt
             | TileKind::Sand
             | TileKind::Snow
@@ -111,60 +115,59 @@ impl TileKind {
             | TileKind::Flower
             | TileKind::Ice
             | TileKind::VineClimbable
-            | TileKind::WindmillActive => true,
-            _ => false,
-        }
+            | TileKind::WindmillActive)
     }
 
     /// 该 tile 是否有交互动作（Phase 3 用）
+    #[must_use]
     pub const fn is_interactive(self) -> bool {
-        match self {
-            TileKind::Vine
+        matches!(self, TileKind::Vine
             | TileKind::Seed
             | TileKind::PushBlock
             | TileKind::Windmill
             | TileKind::DarkArea
-            | TileKind::HiddenChest => true,
-            _ => false,
-        }
+            | TileKind::HiddenChest)
     }
 
-    /// GBA 风格调色板颜色 (R, G, B)
-    pub const fn color(self) -> (u8, u8, u8) {
+    /// GBA 风格调色板颜色
+    /// 直接返回 macroquad `Color`，调用方无需再次转换
+    #[must_use]
+    pub fn color(self) -> Color {
+        fn c(r: u8, g: u8, b: u8) -> Color { Color::from_rgba(r, g, b, 255) }
         match self {
-            TileKind::Void => (0, 0, 0),
-            TileKind::Grass => (86, 130, 36),
-            TileKind::Dirt => (160, 120, 60),
-            TileKind::Water => (40, 100, 200),
-            TileKind::Forest => (20, 80, 20),
-            TileKind::Wall => (120, 110, 100),
-            TileKind::Sand => (220, 200, 140),
-            TileKind::Snow => (230, 240, 250),
-            TileKind::Bridge => (140, 100, 60),
-            TileKind::Stairs => (100, 80, 60),
-            TileKind::Flower => (200, 100, 150),
-            TileKind::Roof => (180, 80, 40),
-            TileKind::Vine => (60, 140, 40),
-            TileKind::Seed => (180, 160, 100),
-            TileKind::Ice => (180, 220, 255),
-            TileKind::PushBlock => (160, 140, 120),
-            TileKind::Windmill => (150, 150, 150),
-            TileKind::WindmillActive => (100, 200, 100),
-            TileKind::DarkArea => (10, 10, 20),
-            TileKind::HiddenChest => (200, 180, 50),
-            TileKind::OpenedChest => (120, 100, 60),
-            TileKind::VineClimbable => (80, 160, 60),
-            TileKind::Unknown => (255, 0, 255),
+            TileKind::Void => c(0, 0, 0),
+            TileKind::Grass => c(86, 130, 36),
+            TileKind::Dirt => c(160, 120, 60),
+            TileKind::Water => c(40, 100, 200),
+            TileKind::Forest => c(20, 80, 20),
+            TileKind::Wall => c(120, 110, 100),
+            TileKind::Sand => c(220, 200, 140),
+            TileKind::Snow => c(230, 240, 250),
+            TileKind::Bridge => c(140, 100, 60),
+            TileKind::Stairs => c(100, 80, 60),
+            TileKind::Flower => c(200, 100, 150),
+            TileKind::Roof => c(180, 80, 40),
+            TileKind::Vine => c(60, 140, 40),
+            TileKind::Seed => c(180, 160, 100),
+            TileKind::Ice => c(180, 220, 255),
+            TileKind::PushBlock => c(160, 140, 120),
+            TileKind::Windmill => c(150, 150, 150),
+            TileKind::WindmillActive => c(100, 200, 100),
+            TileKind::DarkArea => c(10, 10, 20),
+            TileKind::HiddenChest => c(200, 180, 50),
+            TileKind::OpenedChest => c(120, 100, 60),
+            TileKind::VineClimbable => c(80, 160, 60),
+            TileKind::Unknown => c(255, 0, 255),
         }
     }
 }
 
-/// 将世界坐标（像素）转换为 tile 索引
-pub fn world_to_tile(world: f32) -> i32 {
-    (world / TILE_SIZE).floor() as i32
+/// 将世界坐标（像素）转换为 tile 索引（i32，向下取整）
+pub fn world_to_tile_index(world: f32) -> i32 {
+    (world * WORLD_TO_TILE).floor() as i32
 }
 
 /// 将 tile 索引转换为世界坐标（tile 中心点）
-pub fn tile_to_world(tile: i32) -> f32 {
+pub fn tile_center(tile: i32) -> f32 {
     tile as f32 * TILE_SIZE + TILE_SIZE * 0.5
 }
