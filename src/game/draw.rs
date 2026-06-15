@@ -2,7 +2,10 @@ use super::{GameCtx, SpriteAtlas};
 
 use golden_sun::constants::{self, RENDER_TARGET_W, RENDER_TARGET_H, TILE_SIZE};
 use golden_sun::engine::GameState;
+use golden_sun::entity::sprite::AnimState;
 use golden_sun::entity::Entity;
+use golden_sun::map::{mode7, tilemap};
+use golden_sun::Mode7Camera;
 use macroquad::prelude::*;
 
 impl GameCtx {
@@ -39,11 +42,11 @@ impl GameCtx {
 
     fn draw_world_map(&mut self) {
         if self.modified_tiles.is_empty() {
-            golden_sun::map::mode7::render(&mut self.textures, &self.camera, golden_sun::map::tilemap::get_tile);
+            mode7::render(&mut self.textures, &self.camera, tilemap::get_tile);
         } else {
             let overlays = &self.modified_tiles;
-            golden_sun::map::mode7::render(&mut self.textures, &self.camera, |x, y|
-                overlays.get(&(x, y)).copied().unwrap_or_else(|| golden_sun::map::tilemap::get_tile(x, y))
+            mode7::render(&mut self.textures, &self.camera, |x, y|
+                overlays.get(&(x, y)).copied().unwrap_or_else(|| tilemap::get_tile(x, y))
             );
         }
         self.textures.upload_world_map();
@@ -100,7 +103,7 @@ impl GameCtx {
     fn render_npcs(&self) {
         struct NpcProj {
             sx: f32, sy: f32, scale: f32,
-            state: golden_sun::entity::sprite::AnimState,
+            state: AnimState,
             frame_idx: usize,
         }
 
@@ -113,7 +116,7 @@ impl GameCtx {
 
         let mut queue: Vec<NpcProj> = Vec::with_capacity(self.npcs.len());
         for npc in &self.npcs {
-            let Some((sx, sy, scale)) = golden_sun::Mode7Camera::world_to_screen_with(
+            let Some((sx, sy, scale)) = Mode7Camera::world_to_screen_with(
                 npc.pos.0, npc.pos.1, cam_x, cam_z, cos_r, sin_r, height, fov,
             ) else { continue; };
             if sx < 0.0 || sx > RENDER_TARGET_W as f32 || sy < 0.0 || sy > RENDER_TARGET_H as f32 {

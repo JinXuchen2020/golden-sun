@@ -1,12 +1,15 @@
 mod update;
 mod draw;
 
+use std::collections::HashMap;
+
 use golden_sun::engine::{Camera, FrameTime, GameState, InputState};
 use golden_sun::{InputBus, TextureCache, WindowConfig};
 use golden_sun::constants::{RENDER_TARGET_W, RENDER_TARGET_H, SPRITE_SIZE, PP_INITIAL, PP_MAX};
 use golden_sun::{SceneId, SceneRegistry, PsynergyType};
 use golden_sun::entity::{create_vale_npcs, Entity};
 use golden_sun::entity::sprite::{self, AnimState};
+use golden_sun::map::TileKind;
 use macroquad::prelude::*;
 
 const PLAYER_START_X: f32 = 15.0;
@@ -79,7 +82,7 @@ pub struct GameCtx {
     selected_psynergy: usize,
     pp_recover_timer: f32,
     /// 运行时 tile 覆盖（精灵力修改的地图格）
-    modified_tiles: std::collections::HashMap<(i32, i32), golden_sun::map::TileKind>,
+    modified_tiles: HashMap<(i32, i32), TileKind>,
 }
 
 impl GameCtx {
@@ -103,7 +106,7 @@ impl GameCtx {
             unlocked_count: 4,
             selected_psynergy: 0,
             pp_recover_timer: 0.0,
-            modified_tiles: std::collections::HashMap::new(),
+            modified_tiles: HashMap::new(),
         }
     }
 

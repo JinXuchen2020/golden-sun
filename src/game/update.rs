@@ -4,7 +4,8 @@ use golden_sun::constants::{self, TILE_SIZE};
 use golden_sun::engine::{Camera, GameState};
 use golden_sun::entity::sprite::AnimState;
 use golden_sun::entity::{Direction, Entity, WalkPattern};
-use golden_sun::map::tilemap;
+use golden_sun::map::{tilemap, TileKind};
+use golden_sun::psynergy::effects;
 use golden_sun::{PsynergyType, InputEvent};
 
 /// Debug 日志（release 模式编译消除）
@@ -39,10 +40,10 @@ impl GameCtx {
                 }
             }
             GameState::WorldMap => {
-                self.update_player();
+                let moving = self.update_player();
                 self.update_npcs();
                 self.camera.update_lerp(self.time.delta);
-                self.recover_pp();
+                self.recover_pp(moving);
 
                 if self.input_bus.consume(InputEvent::Confirm) {
                     if let Some(npc) = self.find_nearby_npc() {
@@ -98,48 +99,52 @@ impl GameCtx {
 
     /// 尝试使用当前选中的精灵力
     fn try_use_selected_psynergy(&mut self) {
-        let psynergy = self.unlocked_psynergies[self.selected_psynergy];
         debug_assert!(self.selected_psynergy < self.unlocked_count);
+        let psynergy = self.unlocked_psynergies[self.selected_psynergy];
         if self.pp < psynergy.pp_cost() {
             dbg!("PP 不足！需要 {}，当前 {}", psynergy.pp_cost(), self.pp);
             return;
         }
 
-        // 对玩家前方一格的地图 tile 使用精灵力
         let tx = (self.camera.x + self.camera.rotation.cos()).floor() as i32;
         let ty = (self.camera.y + self.camera.rotation.sin()).floor() as i32;
 
-        let tile = self.effective_tile(tx, ty);
+        let succeeded = match psynergy {
+            PsynergyType::Force => self.try_push_block(tx, ty),
+            PsynergyType::Flash => self.apply_flash(tx, ty),
+            PsynergyType::Reveal => self.apply_reveal(tx, ty),
+            _ => {
+                let tile = self.effective_tile(tx, ty);
+                if let Some(t) = effects::apply_psynergy(tile, psynergy) {
+                    self.modified_tiles.insert((tx, ty), t);
+                    true
+                } else {
+                    false
+                }
+            }
+        };
 
-        let new_tile = golden_sun::psynergy::effects::apply_psynergy(tile, psynergy);
-        if let Some(t) = new_tile {
-            self.modified_tiles.insert((tx, ty), t);
+        if succeeded {
             self.pp -= psynergy.pp_cost();
-            dbg!("使用了 {:?} → ({}, {}) 变为 {:?}", psynergy, tx, ty, t);
-        } else if psynergy == PsynergyType::Force {
-            self.try_push_block(tx, ty);
-        } else if psynergy == PsynergyType::Flash {
-            self.apply_flash(tx, ty);
-        } else if psynergy == PsynergyType::Reveal {
-            self.apply_reveal(tx, ty);
-        } else {
-            dbg!("{:?} 对该位置无效", psynergy);
         }
 
         self.state = GameState::WorldMap;
     }
 
-    /// 获取带运行时覆盖的 tile
-    pub(crate) fn effective_tile(&self, x: i32, y: i32) -> golden_sun::map::TileKind {
-        self.modified_tiles.get(&(x, y)).copied().unwrap_or_else(|| tilemap::get_tile(x, y))
+    /// 获取带运行时覆盖的 tile（最快路径：未使用精灵力时不查 HashMap）
+    pub(crate) fn effective_tile(&self, x: i32, y: i32) -> TileKind {
+        if self.modified_tiles.is_empty() {
+            tilemap::get_tile(x, y)
+        } else {
+            self.modified_tiles.get(&(x, y)).copied().unwrap_or_else(|| tilemap::get_tile(x, y))
+        }
     }
 
-    /// Force：朝玩家 facing 方向推 PushBlock 一格
-    fn try_push_block(&mut self, x: i32, y: i32) {
-        if self.effective_tile(x, y) != golden_sun::map::TileKind::PushBlock {
-            return;
+    /// Force：朝玩家 facing 方向推 PushBlock 一格，返回是否成功
+    fn try_push_block(&mut self, x: i32, y: i32) -> bool {
+        if self.effective_tile(x, y) != TileKind::PushBlock {
+            return false;
         }
-        // 推的方向 = 玩家面朝方向
         let facing = facing_from_angle(self.camera.rotation);
         let (dx, dy) = match facing {
             Direction::Right => (1, 0),
@@ -151,40 +156,43 @@ impl GameCtx {
         let target_y = y + dy;
 
         if self.effective_tile(target_x, target_y).is_walkable() {
-            self.modified_tiles.insert((target_x, target_y), golden_sun::map::TileKind::PushBlock);
-            self.modified_tiles.insert((x, y), golden_sun::map::TileKind::Grass);
-            self.pp -= PsynergyType::Force.pp_cost();
-            dbg!("Force 将 PushBlock 从 ({},{}) 推到 ({},{})", x, y, target_x, target_y);
+            self.modified_tiles.insert((target_x, target_y), TileKind::PushBlock);
+            self.modified_tiles.insert((x, y), TileKind::Grass);
+            true
+        } else {
+            false
         }
     }
 
-    /// Flash：照亮前方 3×3 暗区
-    fn apply_flash(&mut self, cx: i32, cy: i32) {
+    /// Flash：照亮前方 3×3 暗区，返回是否至少照亮一处
+    fn apply_flash(&mut self, cx: i32, cy: i32) -> bool {
+        let mut affected = false;
         for dy in -1..=1 {
             for dx in -1..=1 {
                 let tx = cx + dx;
                 let ty = cy + dy;
-                if self.effective_tile(tx, ty) == golden_sun::map::TileKind::DarkArea {
-                    self.modified_tiles.insert((tx, ty), golden_sun::map::TileKind::Grass);
+                if self.effective_tile(tx, ty) == TileKind::DarkArea {
+                    self.modified_tiles.insert((tx, ty), TileKind::Grass);
+                    affected = true;
                 }
             }
         }
-        self.pp -= PsynergyType::Flash.pp_cost();
-        dbg!("Flash 照亮 ({},{}) 周围 3×3", cx, cy);
+        affected
     }
 
-    /// Reveal：显示前方隐藏宝箱
-    fn apply_reveal(&mut self, cx: i32, cy: i32) {
-        if self.effective_tile(cx, cy) == golden_sun::map::TileKind::HiddenChest {
-            self.modified_tiles.insert((cx, cy), golden_sun::map::TileKind::OpenedChest);
-            self.pp -= PsynergyType::Reveal.pp_cost();
-            dbg!("Reveal 发现了隐藏宝箱在 ({},{})", cx, cy);
+    /// Reveal：显示前方隐藏宝箱，返回是否发现
+    fn apply_reveal(&mut self, cx: i32, cy: i32) -> bool {
+        if self.effective_tile(cx, cy) == TileKind::HiddenChest {
+            self.modified_tiles.insert((cx, cy), TileKind::OpenedChest);
+            true
+        } else {
+            false
         }
     }
 
-    /// 行走时 PP 恢复
-    fn recover_pp(&mut self) {
-        if self.pp >= self.max_pp { return; }
+    /// 仅当玩家实际移动时累积 PP 恢复计时
+    fn recover_pp(&mut self, moving: bool) {
+        if self.pp >= self.max_pp || !moving { return; }
         self.pp_recover_timer += self.time.delta;
         if self.pp_recover_timer >= constants::PP_RECOVER_INTERVAL {
             self.pp = (self.pp + constants::PP_RECOVER_AMOUNT).min(self.max_pp);
@@ -193,7 +201,8 @@ impl GameCtx {
         }
     }
 
-    fn update_player(&mut self) {
+    /// 返回玩家本帧是否移动
+    fn update_player(&mut self) -> bool {
         let dt = self.time.delta;
         let speed = constants::PLAYER_SPEED
             * if self.input.a_held { constants::PLAYER_SPRINT_MULTIPLIER } else { 1.0 };
@@ -225,6 +234,8 @@ impl GameCtx {
             self.player_entity.anim_state = AnimState::from_dir(facing, false);
             self.player_entity.anim_timer = 0.0;
         }
+
+        moved
     }
 
     fn update_npcs(&mut self) {

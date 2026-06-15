@@ -66,19 +66,6 @@ impl PsynergyType {
         }
     }
 
-    /// 所有精灵力类型的列表（遍历用）
-    pub const fn all() -> &'static [PsynergyType] {
-        &[
-            PsynergyType::Whirlwind,
-            PsynergyType::Growth,
-            PsynergyType::Freeze,
-            PsynergyType::Force,
-            PsynergyType::Catch,
-            PsynergyType::Flash,
-            PsynergyType::Reveal,
-        ]
-    }
-
     /// UI 显示用单字符标签
     pub const fn name(self) -> &'static str {
         match self {
