@@ -89,3 +89,13 @@ pub const NPC_PATROL_ARRIVE_SQ: f32 = 4.0;
 /// NPC 巡逻路径点停留时间（秒）
 pub const NPC_PATROL_PAUSE_DURATION: f32 = 2.0;
 
+// ── 精灵力 ──
+/// 行走时 PP 恢复间隔（秒）
+pub const PP_RECOVER_INTERVAL: f32 = 10.0;
+/// 行走时 PP 恢复量
+pub const PP_RECOVER_AMOUNT: u32 = 1;
+/// 初始 PP 最大值
+pub const PP_MAX: u32 = 25;
+/// 初始 PP 值
+pub const PP_INITIAL: u32 = 15;
+

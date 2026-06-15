@@ -1,6 +1,6 @@
 use super::{GameCtx, SpriteAtlas};
 
-use golden_sun::constants::{self, RENDER_TARGET_W, RENDER_TARGET_H, SPRITE_SIZE, TILE_SIZE};
+use golden_sun::constants::{self, RENDER_TARGET_W, RENDER_TARGET_H, TILE_SIZE};
 use golden_sun::engine::GameState;
 use golden_sun::entity::Entity;
 use macroquad::prelude::*;
@@ -13,6 +13,12 @@ impl GameCtx {
             GameState::Title => self.draw_title(),
             GameState::WorldMap => {
                 self.draw_world_map();
+                #[cfg(debug_assertions)]
+                self.draw_debug();
+            }
+            GameState::Psynergy => {
+                self.draw_world_map();
+                self.draw_psynergy_ui();
                 #[cfg(debug_assertions)]
                 self.draw_debug();
             }
@@ -32,7 +38,71 @@ impl GameCtx {
     }
 
     fn draw_world_map(&mut self) {
-        golden_sun::map::mode7::render(&mut self.textures, &self.camera);
+        if self.modified_tiles.is_empty() {
+            golden_sun::map::mode7::render(&mut self.textures, &self.camera, golden_sun::map::tilemap::get_tile);
+        } else {
+            let overlays = &self.modified_tiles;
+            golden_sun::map::mode7::render(&mut self.textures, &self.camera, |x, y|
+                overlays.get(&(x, y)).copied().unwrap_or_else(|| golden_sun::map::tilemap::get_tile(x, y))
+            );
+        }
+        self.textures.upload_world_map();
+        draw_texture(self.textures.world_map_texture(), 0.0, 0.0, WHITE);
+
+        self.render_npcs();
+
+        let screen_x = self.config.width * 0.5;
+        let screen_y = self.config.height - constants::SCREEN_MARGIN_BOTTOM;
+        draw_player_sprite(&self.sprites, &self.player_entity, screen_x, screen_y);
+    }
+
+    /// 精灵力选择 UI：屏幕底部快捷栏
+    fn draw_psynergy_ui(&self) {
+        const BAR_H: f32 = 40.0;
+        const BAR_MARGIN: f32 = 50.0;
+        const ICON_SIZE: f32 = 28.0;
+        const ICON_GAP: f32 = 40.0;
+        const LABEL_OFFSET_X: f32 = 60.0;
+
+        let bar_y = self.config.height - BAR_MARGIN;
+        let mut bar_x = 10.0;
+
+        draw_rectangle(0.0, bar_y, self.config.width, BAR_H, Color::from_rgba(0, 0, 0, 180));
+        draw_text("精灵力", bar_x, bar_y - 8.0, 16.0, Color::from_rgba(200, 220, 255, 255));
+
+        bar_x += LABEL_OFFSET_X;
+        let unlocked = &self.unlocked_psynergies[..self.unlocked_count];
+        for (i, psynergy) in unlocked.iter().enumerate() {
+            let is_selected = i == self.selected_psynergy;
+            let is_affordable = self.pp >= psynergy.pp_cost();
+
+            if is_selected {
+                draw_rectangle(bar_x - 4.0, bar_y + 4.0, ICON_SIZE + 8.0, ICON_SIZE + 4.0,
+                    Color::from_rgba(255, 220, 60, 180));
+            }
+
+            let (r, g, b) = psynergy.icon_color();
+            let icon_color = Color::from_rgba(r, g, b, 255);
+            let text_color = if is_affordable { WHITE } else { GRAY };
+
+            draw_rectangle(bar_x, bar_y + 8.0, ICON_SIZE, ICON_SIZE - 4.0, icon_color);
+            draw_text(psynergy.name(), bar_x + 8.0, bar_y + 26.0, 16.0, text_color);
+            draw_text(psynergy.pp_label(), bar_x, bar_y + 38.0, 10.0, text_color);
+
+            bar_x += ICON_GAP;
+        }
+
+        let pp_text = format!("PP: {}/{}", self.pp, self.max_pp);
+        draw_text(&pp_text, self.config.width - 120.0, bar_y + 26.0, 18.0,
+            Color::from_rgba(100, 200, 255, 255));
+    }
+
+    fn render_npcs(&self) {
+        struct NpcProj {
+            sx: f32, sy: f32, scale: f32,
+            state: golden_sun::entity::sprite::AnimState,
+            frame_idx: usize,
+        }
 
         let cam_x = self.camera.x * TILE_SIZE;
         let cam_z = self.camera.y * TILE_SIZE;
@@ -40,78 +110,31 @@ impl GameCtx {
         let sin_r = self.camera.rotation.sin();
         let height = self.camera.height;
         let fov = self.camera.fov;
-        let image = self.textures.world_map_image_mut();
-        let pixels = &mut image.bytes;
-        let w = RENDER_TARGET_W as usize;
-        let h = RENDER_TARGET_H as usize;
 
-        struct NpcRender<'a> {
-            sx: f32,
-            sy: f32,
-            scale: f32,
-            frames: &'a Vec<Vec<u8>>,
-            frame_idx: usize,
-        }
-
-        let mut render_queue: Vec<NpcRender> = Vec::with_capacity(self.npcs.len());
-
+        let mut queue: Vec<NpcProj> = Vec::with_capacity(self.npcs.len());
         for npc in &self.npcs {
-            if let Some((sx, sy, scale)) = golden_sun::Mode7Camera::world_to_screen_with(
+            let Some((sx, sy, scale)) = golden_sun::Mode7Camera::world_to_screen_with(
                 npc.pos.0, npc.pos.1, cam_x, cam_z, cos_r, sin_r, height, fov,
-            ) {
-                let sx_i = sx as usize;
-                let sy_i = sy as usize;
-                if sx_i >= w || sy_i >= h { continue; }
-
-                let frames = self.sprites.npc_frame(npc.anim_state);
-                let frame_idx = npc.current_frame_index(frames.len());
-                render_queue.push(NpcRender {
-                    sx, sy, scale,
-                    frames,
-                    frame_idx,
-                });
+            ) else { continue; };
+            if sx < 0.0 || sx > RENDER_TARGET_W as f32 || sy < 0.0 || sy > RENDER_TARGET_H as f32 {
+                continue;
             }
+            let frames = self.sprites.npc_tex(npc.anim_state);
+            let frame_idx = npc.current_frame_index(frames.len());
+            queue.push(NpcProj { sx, sy, scale, state: npc.anim_state, frame_idx });
         }
 
-        render_queue.sort_by(|a, b| a.scale.partial_cmp(&b.scale).unwrap_or(std::cmp::Ordering::Greater));
+        queue.sort_by(|a, b| a.scale.partial_cmp(&b.scale).unwrap_or(std::cmp::Ordering::Greater));
 
-        for item in &render_queue {
-            let raw = &item.frames[item.frame_idx];
-
-            let draw_h = (SPRITE_SIZE as f32 * item.scale).max(4.0) as usize;
-            let draw_w = (SPRITE_SIZE as f32 * item.scale).max(4.0) as usize;
-            let ratio_x = (constants::SPRITE_SIZE as f32) / draw_w as f32;
-            let ratio_y = (constants::SPRITE_SIZE as f32) / draw_h as f32;
-
-            let step_x = ratio_x * 4.0;
-            let step_y = ratio_y * (constants::SPRITE_SIZE as f32) * 4.0;
-            let sx_i = item.sx as usize;
-            let sy_i = item.sy as usize;
-
-            for dy in 0..draw_h.min(h - sy_i) {
-                let src_off = (dy as f32 * step_y) as usize;
-                if src_off + 4 > raw.len() { break; }
-                let src_row = &raw[src_off..];
-                let mut dst_i = ((sy_i + dy) * w + sx_i) * 4;
-                for dx in 0..draw_w.min(w - sx_i) {
-                    let src_i = (dx as f32 * step_x) as usize;
-                    // 安全边界：src_i + 2 必须在 src_row 范围内
-                    if src_i + 2 >= src_row.len() { break; }
-                    pixels[dst_i]     = src_row[src_i];
-                    pixels[dst_i + 1] = src_row[src_i + 1];
-                    pixels[dst_i + 2] = src_row[src_i + 2];
-                    pixels[dst_i + 3] = 255;
-                    dst_i += 4;
-                }
-            }
+        for item in &queue {
+            let texes = self.sprites.npc_tex(item.state);
+            let tex = &texes[item.frame_idx];
+            let size = constants::SPRITE_SIZE as f32 * item.scale;
+            draw_texture_ex(tex,
+                item.sx - size * 0.5, item.sy - size, WHITE,
+                DrawTextureParams { dest_size: Some(Vec2::new(size, size)), ..Default::default() },
+            );
         }
-
-         self.textures.upload_world_map();
-        draw_texture(self.textures.world_map_texture(), 0.0, 0.0, WHITE);
-
-        let screen_x = self.config.width * 0.5;
-        let screen_y = self.config.height - constants::SCREEN_MARGIN_BOTTOM;
-        draw_player_sprite(&self.sprites, &self.player_entity, screen_x, screen_y);
     }
 
     #[cfg(debug_assertions)]
@@ -119,8 +142,8 @@ impl GameCtx {
         let (wx, wy) = self.camera.world_pos();
         let (tx, ty) = self.camera.tile_index();
         draw_text(
-            format!("FPS: {} | Tile: ({},{}) | World: ({:.0},{:.0}) | Rot: {:.2}",
-                get_fps(), tx, ty, wx, wy, self.camera.rotation),
+            format!("FPS: {} | Tile: ({},{}) | World: ({:.0},{:.0}) | Rot: {:.2} | PP: {}/{}",
+                get_fps(), tx, ty, wx, wy, self.camera.rotation, self.pp, self.max_pp),
             10.0, self.config.height - constants::SCREEN_MARGIN_BOTTOM, 14.0,
             constants::DEBUG_TEXT_COLOR,
         );
