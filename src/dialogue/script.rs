@@ -37,31 +37,40 @@ impl DialogueScript {
     pub fn page_count(&self) -> usize { self.pages.len() }
 }
 
-/// NPC 对话数据库
+/// NPC 对话数据库（二分查找，O(log n)）
 pub fn get_script(id: &str) -> Option<&'static DialogueScript> {
-    NPC_SCRIPTS.iter().find(|(k, _)| *k == id).map(|(_, v)| *v)
+    NPC_SCRIPTS.binary_search_by_key(&id, |(k, _)| k).ok().map(|i| NPC_SCRIPTS[i].1)
 }
 
 // ── Vale 村 NPC 对话 ──
+// 每页全文预拼接，避免运行时 `join("\n")` 分配
+
+const IVAN_TEXT: &str = "你好！我是伊万，Vale 村的铁匠。\n我在这儿打铁已经二十年了。\n如果你需要修理装备，随时可以来找我。";
 
 const IVAN_LINES: &[DialogueLine] = &[
-    DialogueLine { text: "你好！我是伊万，Vale 村的铁匠。", actions: &[DialogueAction::SetFlag("met_ivan")] },
-    DialogueLine { text: "我在这儿打铁已经二十年了。", actions: &[] },
-    DialogueLine { text: "如果你需要修理装备，随时可以来找我。", actions: &[] },
+    DialogueLine { text: IVAN_TEXT, actions: &[DialogueAction::SetFlag("met_ivan")] },
 ];
+
+const MIA_TEXT: &str = "你喜欢这里的池塘吗？夏天有很多鱼。\n有时候我能看到水面上有奇怪的闪光……";
 
 const MIA_LINES: &[DialogueLine] = &[
-    DialogueLine { text: "你喜欢这里的池塘吗？夏天有很多鱼。", actions: &[DialogueAction::SetFlag("met_mia")] },
-    DialogueLine { text: "有时候我能看到水面上有奇怪的闪光……", actions: &[] },
+    DialogueLine { text: MIA_TEXT, actions: &[DialogueAction::SetFlag("met_mia")] },
 ];
+
+const GARSMIN_TEXT: &str = "我是村里的长老。小心山上的怪物！\n最近山上不太平，你最好准备好再出发。\n如果你学会了精灵力，也许还有机会。";
 
 const GARSMIN_LINES: &[DialogueLine] = &[
-    DialogueLine { text: "我是村里的长老。小心山上的怪物！", actions: &[DialogueAction::SetFlag("met_garsmin")] },
-    DialogueLine { text: "最近山上不太平，你最好准备好再出发。", actions: &[] },
-    DialogueLine { text: "如果你学会了精灵力，也许还有机会。", actions: &[] },
+    DialogueLine { text: GARSMIN_TEXT, actions: &[DialogueAction::SetFlag("met_garsmin")] },
 ];
 
+/// 按 key 排序（二分查找要求）
 const NPC_SCRIPTS: &[(&str, &DialogueScript)] = &[
+    ("garsmin", &DialogueScript {
+        pages: &[
+            DialoguePage { lines: GARSMIN_LINES, choices: &[] },
+        ],
+        start_flag: Some("talked_to_garsmin"),
+    }),
     ("ivan", &DialogueScript {
         pages: &[
             DialoguePage { lines: IVAN_LINES, choices: &[] },
@@ -74,12 +83,6 @@ const NPC_SCRIPTS: &[(&str, &DialogueScript)] = &[
         ],
         start_flag: Some("talked_to_mia"),
     }),
-    ("garsmin", &DialogueScript {
-        pages: &[
-            DialoguePage { lines: GARSMIN_LINES, choices: &[] },
-        ],
-        start_flag: Some("talked_to_garsmin"),
-    }),
 ];
 
 #[cfg(test)]
@@ -90,19 +93,19 @@ mod tests {
     fn ivan_script_exists() {
         let s = get_script("ivan").unwrap();
         assert_eq!(s.page_count(), 1);
-        assert_eq!(s.pages[0].lines.len(), 3);
+        assert_eq!(s.pages[0].lines.len(), 1);
     }
 
     #[test]
     fn mia_script_exists() {
         let s = get_script("mia").unwrap();
-        assert_eq!(s.pages[0].lines.len(), 2);
+        assert_eq!(s.pages[0].lines.len(), 1);
     }
 
     #[test]
     fn garsmin_script_exists() {
         let s = get_script("garsmin").unwrap();
-        assert_eq!(s.pages[0].lines.len(), 3);
+        assert_eq!(s.pages[0].lines.len(), 1);
     }
 
     #[test]

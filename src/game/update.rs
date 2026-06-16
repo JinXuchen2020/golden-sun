@@ -55,9 +55,8 @@ impl GameCtx {
                                 if let Some(flag) = script.start_flag {
                                     self.story_flags.set(flag);
                                 }
-                                let full: String = script.pages[0].lines.iter()
-                                    .map(|l| l.text).collect::<Vec<_>>().join("\n");
-                                self.dialogue = Some(DialogueState::new(full));
+                                let text = script.pages[0].lines[0].text.to_string();
+                                self.dialogue = Some(DialogueState::new(text));
                             } else {
                                 self.dialogue = Some(DialogueState::new(text.clone()));
                             }
@@ -146,7 +145,7 @@ impl GameCtx {
                                     if e_idx < battle.party.len() {
                                         break;
                                     }
-                                    let action = battle.enemy_decision(e_idx - battle.party.len());
+                                    let action = battle.enemy_decision();
                                     battle.execute_turn(action);
                                 }
                             }

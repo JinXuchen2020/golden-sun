@@ -9,14 +9,12 @@ use golden_sun::PsynergyType;
 
 #[test]
 fn linear_dialogue_flow() {
-    // 3-line Ivan script → typing → finish → done
     let script = get_script("ivan").unwrap();
-    let full: String = script.pages[0].lines.iter().map(|l| l.text).collect::<Vec<_>>().join("\n");
+    let full = script.pages[0].lines[0].text;
 
-    let mut d = DialogueState::new(full.clone());
+    let mut d = DialogueState::new(full.to_string());
     assert!(!d.is_finished());
 
-    // 模拟打字推进
     while !d.advance(0.1, 30.0) {}
 
     assert!(d.is_finished());

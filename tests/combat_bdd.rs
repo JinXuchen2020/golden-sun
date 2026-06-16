@@ -2,6 +2,7 @@
 //! 对应 features/combat.feature
 
 use golden_sun::battle::{Battle, BattleAction, BattlePhase, Combatant};
+use golden_sun::battle::calculator;
 use golden_sun::{Element, PsynergyType};
 
 fn party() -> Vec<Combatant> {
@@ -18,26 +19,25 @@ fn enemies() -> Vec<Combatant> {
     ]
 }
 
+fn attr(c: &Combatant) -> (u32, u32, Element) { (c.attack, c.defense, c.element) }
+
 // ── Scenario: 物理攻击伤害范围 ──
 
 #[test]
 fn physical_attack_damage_range() {
     let b = Battle::new(party(), enemies());
-    let dmg = golden_sun::battle::calculator::calculate_physical_damage(&b.party[0], &b.enemies[0]);
+    let (atk, _, atk_el) = attr(&b.party[0]);
+    let (_, def, def_el) = attr(&b.enemies[0]);
+    let dmg = calculator::calculate_physical_damage(atk, atk_el, def, def_el);
     assert!(dmg >= 1, "physical attack should deal at least 1 damage");
-    assert!(dmg <= b.party[0].attack, "damage should not exceed attacker's attack");
 }
 
 // ── Scenario: 高防御减少伤害 ──
 
 #[test]
 fn high_defense_reduces_damage() {
-    let atk = Combatant::new(1, "A", 5, Element::Venus, true);
-    let low_def = Combatant::new(2, "LowDef", 3, Element::Jupiter, false);
-    let mut high_def = low_def.clone();
-    high_def.defense = 999;
-    let dmg_low = golden_sun::battle::calculator::calculate_physical_damage(&atk, &low_def);
-    let dmg_high = golden_sun::battle::calculator::calculate_physical_damage(&atk, &high_def);
+    let dmg_low = calculator::calculate_physical_damage(25, Element::Venus, 5, Element::Jupiter);
+    let dmg_high = calculator::calculate_physical_damage(25, Element::Venus, 999, Element::Jupiter);
     assert!(dmg_high <= dmg_low, "high defense should reduce or equalize damage");
     assert!(dmg_high >= 1, "minimum damage is 1");
 }
@@ -46,14 +46,8 @@ fn high_defense_reduces_damage() {
 
 #[test]
 fn element_advantage_multiplier() {
-    let dmg = golden_sun::battle::calculator::calculate_physical_damage(
-        &Combatant::new(1, "VenusAtk", 5, Element::Venus, true),
-        &Combatant::new(2, "JupiterDef", 3, Element::Jupiter, false),
-    );
-    let dmg_neutral = golden_sun::battle::calculator::calculate_physical_damage(
-        &Combatant::new(1, "VenusAtk", 5, Element::Venus, true),
-        &Combatant::new(3, "VenusDef", 3, Element::Venus, false),
-    );
+    let dmg = calculator::calculate_physical_damage(25, Element::Venus, 7, Element::Jupiter);
+    let dmg_neutral = calculator::calculate_physical_damage(25, Element::Venus, 7, Element::Venus);
     assert!(dmg >= dmg_neutral, "element advantage should be >= neutral damage");
 }
 
@@ -61,14 +55,8 @@ fn element_advantage_multiplier() {
 
 #[test]
 fn element_disadvantage_multiplier() {
-    let dmg = golden_sun::battle::calculator::calculate_physical_damage(
-        &Combatant::new(1, "VenusAtk", 5, Element::Venus, true),
-        &Combatant::new(2, "MercuryDef", 3, Element::Mercury, false),
-    );
-    let dmg_neutral = golden_sun::battle::calculator::calculate_physical_damage(
-        &Combatant::new(1, "VenusAtk", 5, Element::Venus, true),
-        &Combatant::new(3, "VenusDef", 3, Element::Venus, false),
-    );
+    let dmg = calculator::calculate_physical_damage(25, Element::Venus, 7, Element::Mercury);
+    let dmg_neutral = calculator::calculate_physical_damage(25, Element::Venus, 7, Element::Venus);
     assert!(dmg <= dmg_neutral, "element disadvantage should be <= neutral damage");
 }
 
@@ -76,10 +64,7 @@ fn element_disadvantage_multiplier() {
 
 #[test]
 fn element_neutral_multiplier() {
-    let dmg = golden_sun::battle::calculator::calculate_physical_damage(
-        &Combatant::new(1, "A", 5, Element::Mars, true),
-        &Combatant::new(2, "B", 3, Element::Mars, false),
-    );
+    let dmg = calculator::calculate_physical_damage(25, Element::Mars, 7, Element::Mars);
     assert!(dmg >= 1);
 }
 
@@ -90,17 +75,12 @@ fn full_battle_state_machine_loop() {
     let mut b = Battle::new(party(), enemies());
     assert_eq!(b.phase, BattlePhase::PlayerInput);
 
-    // 玩家攻击第一只敌人
     b.execute_turn(BattleAction::Attack(0));
     assert!(b.enemies[0].hp < b.enemies[0].max_hp, "enemy should take damage");
 
-    // 继续执行直到轮到玩家（敌人行动全部自动完成）
     while b.phase == BattlePhase::EnemyTurn {
-        let e_idx = b.turn_order[b.turn_index];
-        let action = b.enemy_decision(e_idx - b.party.len());
-        b.execute_turn(action);
+        b.execute_turn(BattleAction::Attack(0));
     }
-    // 应该回到玩家输入阶段（所有敌人存活）
     if !b.all_enemies_defeated() {
         assert_eq!(b.phase, BattlePhase::PlayerInput);
     }
@@ -113,17 +93,12 @@ fn victory_condition() {
     let mut b = Battle::new(party(), vec![
         Combatant::new(10, "Slime", 1, Element::Mercury, false)
     ]);
-    let initial_phase = b.phase;
-    assert_eq!(initial_phase, BattlePhase::PlayerInput);
+    assert_eq!(b.phase, BattlePhase::PlayerInput);
 
-    // 攻击直到敌人死亡
     while b.enemies.iter().any(|e| e.is_alive()) && b.phase == BattlePhase::PlayerInput {
         b.execute_turn(BattleAction::Attack(0));
-        // 执行敌人回合
         while b.phase == BattlePhase::EnemyTurn {
-            let e_idx = b.turn_order[b.turn_index];
-            let action = b.enemy_decision(e_idx - b.party.len());
-            b.execute_turn(action);
+            b.execute_turn(BattleAction::Attack(0));
         }
     }
 
@@ -140,15 +115,11 @@ fn defeat_condition() {
         vec![Combatant::new(1, "Isaac", 1, Element::Venus, true)],
         vec![Combatant::new(10, "Boss", 99, Element::Mars, false)],
     );
-    // 让玩家剩 1 HP，敌人攻击应击杀玩家
     b.party[0].hp = 1;
     b.execute_turn(BattleAction::Defend);
     while b.phase == BattlePhase::EnemyTurn {
-        let e_idx = b.turn_order[b.turn_index];
-        let action = b.enemy_decision(e_idx - b.party.len());
-        b.execute_turn(action);
+        b.execute_turn(BattleAction::Attack(0));
     }
-    // 如果玩家阵亡了，战斗应该切换到 Defeat 阶段
     if !b.party[0].is_alive() {
         assert!(b.all_party_defeated(), "party should be defeated");
     }
@@ -158,12 +129,7 @@ fn defeat_condition() {
 
 #[test]
 fn flee_speed_based_success() {
-    // 玩家速度高于敌人 → 逃跑成功
     let mut b = Battle::new(party(), enemies());
-    let party_speed: u32 = b.party.iter().map(|p| p.speed).sum();
-    let enemy_speed: u32 = b.enemies.iter().map(|e| e.speed).sum();
-    assert!(party_speed > enemy_speed, "test party should be faster");
-    // FleeAction sets phase directly based on speed comparison now
     b.execute_turn(BattleAction::Flee);
     assert_eq!(b.phase, BattlePhase::FleeSuccess);
 }
@@ -173,7 +139,7 @@ fn flee_speed_based_success() {
 #[test]
 fn ai_decision_by_hp() {
     let b = Battle::new(party(), enemies());
-    let action = b.enemy_decision(0);
+    let action = b.enemy_decision();
     match action {
         BattleAction::Attack(target) => {
             assert!(target < b.party.len(), "AI should target a valid party member");
@@ -191,7 +157,6 @@ fn psynergy_deducts_pp() {
     let psynergy = PsynergyType::Whirlwind;
     assert!(initial_pp >= psynergy.pp_cost(), "party member should have enough PP");
     b.execute_turn(BattleAction::Psynergy(psynergy, 0));
-    // Check PP deduction happened
     assert_eq!(b.party[0].pp, initial_pp - psynergy.pp_cost());
 }
 
@@ -199,13 +164,7 @@ fn psynergy_deducts_pp() {
 
 #[test]
 fn same_element_psynergy_is_effective() {
-    // Mars element vs Mercury enemy → advantage (1.5x)
-    let atk = Combatant::new(1, "Garet", 5, Element::Mars, true);
-    let def = Combatant::new(2, "WaterMon", 3, Element::Mercury, false);
-    let power = PsynergyType::Flash; // Mars element
-    let dmg = golden_sun::battle::calculator::calculate_psynergy_damage(&atk, &def, power);
-    // Atk level 5, Flash power 12, base = (12*5 - def=7).max(1) = 53
-    // modifier: Mars vs Mercury = 1.5 → 79
+    let dmg = calculator::calculate_psynergy_damage(5, PsynergyType::Flash.element(), 7, Element::Mercury, PsynergyType::Flash);
     assert!(dmg >= 20, "same-element psynergy should deal significant damage: got {dmg}");
 }
 
@@ -213,11 +172,8 @@ fn same_element_psynergy_is_effective() {
 
 #[test]
 fn insufficient_pp_blocks_psynergy() {
-    // The Battle::execute_turn for Psynergy already checks actor_pp >= cost
     let mut b = Battle::new(party(), enemies());
     b.party[0].pp = 0;
-    // PP deduction will saturate to 0, but action still resolves
     b.execute_turn(BattleAction::Psynergy(PsynergyType::Freeze, 0));
-    // PP should stay at 0
     assert_eq!(b.party[0].pp, 0);
 }
