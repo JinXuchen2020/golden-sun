@@ -1,5 +1,7 @@
 use super::GameCtx;
 
+use golden_sun::battle::BattleAction;
+use golden_sun::battle::BattlePhase;
 use golden_sun::constants::{self, TILE_SIZE};
 use golden_sun::dialogue::DialogueState;
 use golden_sun::engine::{Camera, GameState};
@@ -115,6 +117,48 @@ impl GameCtx {
             GameState::Menu => {
                 if self.input_bus.consume(InputEvent::Cancel) {
                     self.state = GameState::WorldMap;
+                }
+            }
+            GameState::Battle => {
+                if let Some(ref mut battle) = self.battle {
+                    match battle.phase {
+                        BattlePhase::PlayerInput => {
+                            let player_action = if self.input_bus.consume(InputEvent::Confirm) {
+                                Some(BattleAction::Attack(0))
+                            } else if self.input_bus.consume(InputEvent::Cancel) {
+                                Some(BattleAction::Defend)
+                            } else if self.input_bus.consume(InputEvent::Secondary) {
+                                Some(BattleAction::Flee)
+                            } else {
+                                None
+                            };
+                            if let Some(action) = player_action {
+                                battle.execute_turn(action);
+                                loop {
+                                    if battle.phase == BattlePhase::PlayerInput
+                                        || battle.phase == BattlePhase::Victory
+                                        || battle.phase == BattlePhase::Defeat
+                                        || battle.phase == BattlePhase::FleeSuccess
+                                    {
+                                        break;
+                                    }
+                                    let e_idx = battle.turn_order[battle.turn_index];
+                                    if e_idx < battle.party.len() {
+                                        break;
+                                    }
+                                    let action = battle.enemy_decision(e_idx - battle.party.len());
+                                    battle.execute_turn(action);
+                                }
+                            }
+                        }
+                        BattlePhase::Victory | BattlePhase::Defeat | BattlePhase::FleeSuccess => {
+                            if self.input_bus.consume(InputEvent::Confirm) {
+                                self.battle = None;
+                                self.state = GameState::WorldMap;
+                            }
+                        }
+                        _ => {}
+                    }
                 }
             }
             _ => {}

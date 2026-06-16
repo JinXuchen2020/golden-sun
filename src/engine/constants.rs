@@ -113,3 +113,19 @@ pub const PP_MAX: u32 = 25;
 /// 初始 PP 值
 pub const PP_INITIAL: u32 = 15;
 
+// ── 战斗系统（Phase 5） ──
+/// 战斗菜单文本 X 偏移
+pub const BATTLE_MENU_X: f32 = 20.0;
+/// 战斗菜单文本 Y 偏移
+pub const BATTLE_MENU_Y: f32 = 360.0;
+/// 战斗菜单行间距
+pub const BATTLE_MENU_LINE_H: f32 = 24.0;
+/// 战斗日志文本字号
+pub const BATTLE_LOG_SIZE: f32 = 14.0;
+/// 战斗日志 Y 偏移
+pub const BATTLE_LOG_Y: f32 = 300.0;
+/// 战斗日志最大行数
+pub const BATTLE_LOG_MAX: usize = 5;
+/// 敌人名称文本 Y 偏移
+pub const BATTLE_ENEMY_NAME_Y: f32 = 30.0;
+

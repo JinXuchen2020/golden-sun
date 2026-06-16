@@ -1,5 +1,6 @@
 use super::{GameCtx, SpriteAtlas};
 
+use golden_sun::battle::BattlePhase;
 use golden_sun::constants::{self, RENDER_TARGET_W, RENDER_TARGET_H, TILE_SIZE};
 use golden_sun::engine::GameState;
 use golden_sun::entity::sprite::AnimState;
@@ -28,6 +29,13 @@ impl GameCtx {
             GameState::Psynergy => {
                 self.draw_world_map();
                 self.draw_psynergy_ui();
+                #[cfg(debug_assertions)]
+                self.draw_debug();
+            }
+            GameState::Battle => self.draw_battle(),
+            GameState::Menu => {
+                self.draw_world_map();
+                self.draw_menu();
                 #[cfg(debug_assertions)]
                 self.draw_debug();
             }
@@ -164,6 +172,63 @@ impl GameCtx {
     }
 
     #[cfg(debug_assertions)]
+    fn draw_battle(&self) {
+        let Some(ref battle) = self.battle else { return; };
+        draw_text("⚔️ BATTLE ⚔️", 10.0, 20.0, 24.0, YELLOW);
+        draw_text("━".repeat(28), 10.0, 30.0, 14.0, GRAY);
+
+        let mut y = constants::BATTLE_ENEMY_NAME_Y;
+        for e in &battle.enemies {
+            let name = if e.is_alive() { e.name } else { "【DEAD】" };
+            let hp_bar = "█".repeat((e.hp * 10 / e.max_hp.max(1)) as usize);
+            let hp_empty = "░".repeat((10 - (e.hp * 10 / e.max_hp.max(1))) as usize);
+            let hp_line = format!("{name}  HP:{hp}/{max_hp}  {hp_bar}{hp_empty}", hp = e.hp, max_hp = e.max_hp);
+            draw_text(&hp_line, 30.0, y, 16.0, if e.is_alive() { RED } else { DARKGRAY });
+            y += 22.0;
+        }
+
+        y = constants::BATTLE_LOG_Y;
+        let start = battle.logs.len().saturating_sub(constants::BATTLE_LOG_MAX);
+        for log in battle.logs.iter().skip(start) {
+            draw_text(log, 10.0, y, constants::BATTLE_LOG_SIZE, WHITE);
+            y += 18.0;
+        }
+
+        if battle.phase == BattlePhase::PlayerInput {
+            draw_rectangle(0.0, 340.0, 300.0, 120.0, Color::from_rgba(0, 0, 0, 200));
+            let actions = ["A: Attack", "D: Defend", "P: Psynergy", "F: Flee"];
+            let mut my = constants::BATTLE_MENU_Y;
+            for a in actions {
+                draw_text(a, constants::BATTLE_MENU_X, my, 18.0, WHITE);
+                my += constants::BATTLE_MENU_LINE_H;
+            }
+        }
+
+        if battle.phase == BattlePhase::Victory {
+            draw_text("VICTORY!", 200.0, 200.0, 36.0, GREEN);
+            let reward = format!("EXP: {}  Coins: {}", battle.total_exp, battle.total_coins);
+            draw_text(&reward, 200.0, 240.0, 20.0, LIGHTGRAY);
+            draw_text("Press Confirm to continue", 200.0, 280.0, 16.0, GRAY);
+        }
+        if battle.phase == BattlePhase::Defeat {
+            draw_text("DEFEATED...", 200.0, 200.0, 36.0, RED);
+            draw_text("Press Confirm to continue", 200.0, 260.0, 16.0, GRAY);
+        }
+        if battle.phase == BattlePhase::FleeSuccess {
+            draw_text("You fled!", 200.0, 200.0, 36.0, YELLOW);
+            draw_text("Press Confirm to continue", 200.0, 260.0, 16.0, GRAY);
+        }
+    }
+
+    fn draw_menu(&self) {
+        draw_rectangle(0.0, 0.0, self.config.width, self.config.height,
+            Color::from_rgba(0, 0, 0, 180));
+        draw_text("MENU", 10.0, 30.0, 24.0, WHITE);
+        let pp_line = format!("PP: {}/{}", self.pp, self.max_pp);
+        draw_text(&pp_line, 10.0, 70.0, 18.0, LIGHTGRAY);
+        draw_text("Press Cancel to close", 10.0, self.config.height - 20.0, 14.0, GRAY);
+    }
+
     fn draw_debug(&self) {
         let (wx, wy) = self.camera.world_pos();
         let (tx, ty) = self.camera.tile_index();

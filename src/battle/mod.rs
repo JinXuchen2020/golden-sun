@@ -1,10 +1,10 @@
-//! 战斗系统
+//! 战斗系统（Phase 5）
 //!
-//! ## 子模块（Phase 5+）
-//! - `state`: 战斗状态机
-//! - `calculator`: 伤害计算与元素克制
+//! 回合制战斗，支持物理攻击、精灵力、元素克制、简单敌人 AI。
 
-// TODO: Phase 5 — 实现回合制战斗
+pub mod calculator;
+pub mod state;
 
-// pub mod state;
-// pub mod calculator;
+pub use state::{
+    AttackResult, Battle, BattleAction, BattlePhase, BattleTurn, Combatant, StatusEffect,
+};

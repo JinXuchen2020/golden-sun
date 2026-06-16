@@ -3,6 +3,7 @@ mod draw;
 
 use std::collections::HashMap;
 
+use golden_sun::battle::{Battle, Combatant};
 use golden_sun::engine::{Camera, FrameTime, GameState, InputState};
 use golden_sun::{InputBus, TextureCache, WindowConfig};
 use golden_sun::constants::{RENDER_TARGET_W, RENDER_TARGET_H, SPRITE_SIZE, PP_INITIAL, PP_MAX};
@@ -11,6 +12,7 @@ use golden_sun::entity::{create_vale_npcs, Entity};
 use golden_sun::dialogue::{DialogueState, StoryFlags};
 use golden_sun::entity::sprite::{self, AnimState};
 use golden_sun::map::TileKind;
+use golden_sun::Element;
 use macroquad::prelude::*;
 
 const PLAYER_START_X: f32 = 15.0;
@@ -87,6 +89,8 @@ pub struct GameCtx {
     // ── Phase 4: 对话 ──
     dialogue: Option<DialogueState>,
     story_flags: StoryFlags,
+    // ── Phase 5: 战斗 ──
+    battle: Option<Battle>,
 }
 
 impl GameCtx {
@@ -113,7 +117,28 @@ impl GameCtx {
             modified_tiles: HashMap::new(),
             dialogue: None,
             story_flags: StoryFlags::new(),
+            battle: None,
         }
+    }
+
+    /// 创建默认参战队伍（Isaac + Garet）
+    #[allow(dead_code)]
+    fn make_party() -> Vec<Combatant> {
+        vec![
+            Combatant::new(1, "Isaac", 5, Element::Venus, true),
+            Combatant::new(2, "Garet", 5, Element::Mars, true),
+        ]
+    }
+
+    /// 启动一场遭遇战
+    #[allow(dead_code)]
+    pub fn start_battle(&mut self) {
+        let enemies = vec![
+            Combatant::new(10, "Wolf", 3, Element::Jupiter, false),
+            Combatant::new(11, "Bat", 2, Element::Mercury, false),
+        ];
+        self.battle = Some(Battle::new(Self::make_party(), enemies));
+        self.state = GameState::Battle;
     }
 
     pub fn step(&mut self) {
