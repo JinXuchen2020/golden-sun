@@ -1,6 +1,7 @@
 use super::GameCtx;
 
 use golden_sun::constants::{self, TILE_SIZE};
+use golden_sun::dialogue::DialogueState;
 use golden_sun::engine::{Camera, GameState};
 use golden_sun::entity::sprite::AnimState;
 use golden_sun::entity::{Direction, Entity, WalkPattern};
@@ -47,7 +48,18 @@ impl GameCtx {
 
                 if self.input_bus.consume(InputEvent::Confirm) {
                     if let Some(npc) = self.find_nearby_npc() {
-                        dbg!("交互 NPC {}: {:?}", npc.id, npc.dialogue_id);
+                        if let Some(ref text) = npc.dialogue_id {
+                            if let Some(script) = golden_sun::dialogue::script::get_script(text) {
+                                if let Some(flag) = script.start_flag {
+                                    self.story_flags.set(flag);
+                                }
+                                let full: String = script.pages[0].lines.iter()
+                                    .map(|l| l.text).collect::<Vec<_>>().join("\n");
+                                self.dialogue = Some(DialogueState::new(full));
+                            } else {
+                                self.dialogue = Some(DialogueState::new(text.clone()));
+                            }
+                        }
                         self.state = GameState::Dialog;
                     }
                 }
@@ -63,10 +75,22 @@ impl GameCtx {
                 }
             }
             GameState::Dialog => {
-                if self.input_bus.consume(InputEvent::Confirm)
-                    || self.input_bus.consume(InputEvent::Cancel)
-                {
-                    self.state = GameState::WorldMap;
+                if let Some(ref mut d) = self.dialogue {
+                    if !d.finished {
+                        d.advance(self.time.delta, constants::DIALOGUE_CHAR_SPEED);
+                    }
+                    if self.input_bus.consume(InputEvent::Confirm) {
+                        if d.finished {
+                            self.dialogue = None;
+                            self.state = GameState::WorldMap;
+                        } else {
+                            d.skip();
+                        }
+                    }
+                    if self.input_bus.consume(InputEvent::Cancel) {
+                        self.dialogue = None;
+                        self.state = GameState::WorldMap;
+                    }
                 }
             }
             GameState::Psynergy => {

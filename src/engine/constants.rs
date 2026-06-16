@@ -89,6 +89,20 @@ pub const NPC_PATROL_ARRIVE_SQ: f32 = 4.0;
 /// NPC 巡逻路径点停留时间（秒）
 pub const NPC_PATROL_PAUSE_DURATION: f32 = 2.0;
 
+// ── 对话系统（Phase 4） ──
+/// 打字机效果速度（字符/秒）
+pub const DIALOGUE_CHAR_SPEED: f32 = 30.0;
+/// 对话框 Y 坐标（顶部）
+pub const DIALOGUE_BOX_Y: f32 = 310.0;
+/// 对话框高度
+pub const DIALOGUE_BOX_H: f32 = 110.0;
+/// 对话文本 X 偏移
+pub const DIALOGUE_TEXT_X: f32 = 20.0;
+/// 对话文本 Y 偏移
+pub const DIALOGUE_TEXT_Y: f32 = 350.0;
+/// 对话文本字号
+pub const DIALOGUE_TEXT_SIZE: f32 = 17.0;
+
 // ── 精灵力 ──
 /// 行走时 PP 恢复间隔（秒）
 pub const PP_RECOVER_INTERVAL: f32 = 10.0;

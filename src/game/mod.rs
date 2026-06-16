@@ -8,6 +8,7 @@ use golden_sun::{InputBus, TextureCache, WindowConfig};
 use golden_sun::constants::{RENDER_TARGET_W, RENDER_TARGET_H, SPRITE_SIZE, PP_INITIAL, PP_MAX};
 use golden_sun::{SceneId, SceneRegistry, PsynergyType};
 use golden_sun::entity::{create_vale_npcs, Entity};
+use golden_sun::dialogue::{DialogueState, StoryFlags};
 use golden_sun::entity::sprite::{self, AnimState};
 use golden_sun::map::TileKind;
 use macroquad::prelude::*;
@@ -83,6 +84,9 @@ pub struct GameCtx {
     pp_recover_timer: f32,
     /// 运行时 tile 覆盖（精灵力修改的地图格）
     modified_tiles: HashMap<(i32, i32), TileKind>,
+    // ── Phase 4: 对话 ──
+    dialogue: Option<DialogueState>,
+    story_flags: StoryFlags,
 }
 
 impl GameCtx {
@@ -107,6 +111,8 @@ impl GameCtx {
             selected_psynergy: 0,
             pp_recover_timer: 0.0,
             modified_tiles: HashMap::new(),
+            dialogue: None,
+            story_flags: StoryFlags::new(),
         }
     }
 

@@ -8,6 +8,7 @@
 pub mod audio;
 pub mod battle;
 pub mod data;
+pub mod dialogue;
 pub mod engine;
 pub mod entity;
 pub mod map;

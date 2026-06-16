@@ -19,6 +19,12 @@ impl GameCtx {
                 #[cfg(debug_assertions)]
                 self.draw_debug();
             }
+            GameState::Dialog => {
+                self.draw_world_map();
+                self.draw_dialogue_box();
+                #[cfg(debug_assertions)]
+                self.draw_debug();
+            }
             GameState::Psynergy => {
                 self.draw_world_map();
                 self.draw_psynergy_ui();
@@ -98,6 +104,23 @@ impl GameCtx {
         let pp_text = format!("PP: {}/{}", self.pp, self.max_pp);
         draw_text(&pp_text, self.config.width - 120.0, bar_y + 26.0, 18.0,
             Color::from_rgba(100, 200, 255, 255));
+    }
+
+    fn draw_dialogue_box(&self) {
+        let y = constants::DIALOGUE_BOX_Y;
+        let h = constants::DIALOGUE_BOX_H;
+        draw_rectangle(0.0, y, self.config.width, h, Color::from_rgba(0, 0, 0, 210));
+        draw_rectangle_lines(0.0, y, self.config.width, h, 2.0, WHITE);
+
+        if let Some(ref d) = self.dialogue {
+            let display = d.visible_text();
+            draw_text(display, constants::DIALOGUE_TEXT_X, constants::DIALOGUE_TEXT_Y,
+                constants::DIALOGUE_TEXT_SIZE, WHITE);
+
+            if d.finished {
+                draw_text("▼", self.config.width - 30.0, y + h - 10.0, 14.0, WHITE);
+            }
+        }
     }
 
     fn render_npcs(&self) {

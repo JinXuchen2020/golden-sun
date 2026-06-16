@@ -86,19 +86,19 @@ pub fn create_vale_npcs() -> Vec<Entity> {
         // 伊万 — 站在房屋 1 前
         Entity::new_npc(
             1, Entity::tile_to_world(7.0, 8.0),
-            Direction::Down, "你好！我是伊万，Vale 村的铁匠。",
+            Direction::Down, "ivan",
             None,
         ),
         // 米娅 — 站在池塘边
         Entity::new_npc(
             2, Entity::tile_to_world(20.0, 20.0),
-            Direction::Left, "你喜欢这里的池塘吗？夏天有很多鱼。",
+            Direction::Left, "mia",
             None,
         ),
         // 加斯敏 — 在房屋 3 附近巡逻
         Entity::new_npc(
             3, Entity::tile_to_world(14.0, 14.0),
-            Direction::Right, "我是村里的长老。小心山上的怪物！",
+            Direction::Right, "garsmin",
             Some(WalkPattern::Patrol {
                 waypoints: vec![
                     Entity::tile_to_world(14.0, 14.0),
@@ -126,9 +126,9 @@ mod tests {
 
     #[test]
     fn npc_has_dialogue() {
-        let npc = Entity::new_npc(1, (300.0, 400.0), Direction::Up, "hi", None);
+        let npc = Entity::new_npc(1, (300.0, 400.0), Direction::Up, "test_npc", None);
         assert_eq!(npc.interact_radius, Some(NPC_INTERACT_RANGE));
-        assert_eq!(npc.dialogue_id, Some("hi".to_string()));
+        assert_eq!(npc.dialogue_id, Some("test_npc".to_string()));
     }
 
     #[test]
