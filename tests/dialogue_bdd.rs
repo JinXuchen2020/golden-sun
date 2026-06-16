@@ -86,7 +86,7 @@ fn typewriter_effect_timing() {
     assert!(d.visible_chars() <= 11);
 
     d.advance(1.0, 30.0);
-    assert!(d.finished);
+    assert!(d.is_finished());
     assert_eq!(d.visible_chars(), 11);
 }
 
@@ -98,7 +98,7 @@ fn typewriter_a_key_skip() {
     assert_eq!(d.visible_chars(), 0);
 
     d.skip();
-    assert!(d.finished);
+    assert!(d.is_finished());
     assert_eq!(d.visible_text(), d.text());
 }
 

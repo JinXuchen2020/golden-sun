@@ -77,11 +77,11 @@ impl GameCtx {
             }
             GameState::Dialog => {
                 if let Some(ref mut d) = self.dialogue {
-                    if !d.finished {
+                    if !d.is_finished() {
                         d.advance(self.time.delta, constants::DIALOGUE_CHAR_SPEED);
                     }
                     if self.input_bus.consume(InputEvent::Confirm) {
-                        if d.finished {
+                        if d.is_finished() {
                             self.dialogue = None;
                             self.state = GameState::WorldMap;
                         } else {
@@ -134,10 +134,11 @@ impl GameCtx {
                             if let Some(action) = player_action {
                                 battle.execute_turn(action);
                                 loop {
-                                    if battle.phase == BattlePhase::PlayerInput
-                                        || battle.phase == BattlePhase::Victory
-                                        || battle.phase == BattlePhase::Defeat
-                                        || battle.phase == BattlePhase::FleeSuccess
+                                    if matches!(battle.phase,
+                                        BattlePhase::PlayerInput
+                                        | BattlePhase::Victory
+                                        | BattlePhase::Defeat
+                                        | BattlePhase::FleeSuccess)
                                     {
                                         break;
                                     }

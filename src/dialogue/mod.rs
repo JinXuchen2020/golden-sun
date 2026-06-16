@@ -13,7 +13,7 @@ pub struct DialogueState {
     /// 可见文本的 byte 结束位置（零切片用）
     visible_end: usize,
     timer: f32,
-    pub finished: bool,
+    finished: bool,
     /// 总字符数缓存（避免每帧 .chars().count()）
     total_chars: usize,
     /// 每个 char 的起始 byte 偏移缓存

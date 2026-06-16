@@ -63,6 +63,15 @@ pub enum BattleAction {
     Flee,
 }
 
+impl BattleAction {
+    pub fn pp_cost(&self) -> u32 {
+        match self {
+            BattleAction::Psynergy(p, _) => p.pp_cost(),
+            _ => 0,
+        }
+    }
+}
+
 /// 单次攻击结果
 #[derive(Debug, Clone, Copy)]
 pub struct AttackResult {
@@ -100,6 +109,25 @@ pub struct Battle {
     enemy_speed: u32,
 }
 
+/// 从 party/enemies 中读取的当前行动者快照
+struct ActorInfo {
+    id: u32,
+    name: &'static str,
+    element: Element,
+    level: u32,
+    attack: u32,
+    pp: u32,
+}
+
+/// 从 party/enemies 中读取的目标快照
+struct TargetInfo {
+    defense: u32,
+    element: Element,
+    hp: u32,
+    id: u32,
+    name: &'static str,
+}
+
 impl Battle {
     pub fn new(party: Vec<Combatant>, enemies: Vec<Combatant>) -> Self {
         let total_exp = enemies.iter().map(|e| e.level * 3).sum();
@@ -128,107 +156,51 @@ impl Battle {
     }
 
     /// 执行一次行动（回合中的一步）
-    pub fn execute_turn(&mut self, action: BattleAction) -> Vec<AttackResult> {
-        let mut results = Vec::new();
+    pub fn execute_turn(&mut self, action: BattleAction) {
         let actor_idx = self.turn_order[self.turn_index];
         let is_party_actor = actor_idx < self.party.len();
-
-        let actor_id: u32;
-        let actor_name: &str;
-        let actor_element: Element;
-        let actor_level: u32;
-        let actor_attack: u32;
-        let actor_pp: u32;
-        if is_party_actor {
-            let a = &self.party[actor_idx];
-            actor_id = a.id;
-            actor_name = a.name;
-            actor_element = a.element;
-            actor_level = a.level;
-            actor_attack = a.attack;
-            actor_pp = a.pp;
-        } else {
-            let a = &self.enemies[actor_idx - self.party.len()];
-            actor_id = a.id;
-            actor_name = a.name;
-            actor_element = a.element;
-            actor_level = a.level;
-            actor_attack = a.attack;
-            actor_pp = a.pp;
-        }
+        let actor = self.actor_info(actor_idx);
 
         match action {
             BattleAction::Attack(target) => {
-                if is_party_actor {
-                    if target < self.enemies.len() && self.enemies[target].is_alive() {
-                        let dmg = calculator::calculate_physical_damage(
-                            actor_attack, actor_element,
-                            self.enemies[target].defense, self.enemies[target].element,
-                        );
-                        let modifier = calculator::element_modifier(actor_element, self.enemies[target].element);
-                        let killed = dmg >= self.enemies[target].hp;
-                        self.enemies[target].take_damage(dmg);
-                        results.push(AttackResult {
-                            attacker: actor_id, target: self.enemies[target].id,
-                            damage: dmg, element: actor_element, modifier, killed,
-                        });
-                        self.logs.push(format!("{actor_name} attacks {} for {dmg} damage!",
-                            self.enemies[target].name));
-                    }
-                } else if target < self.party.len() && self.party[target].is_alive() {
+                let is_party_target = !is_party_actor;
+                if let Some(t) = self.target_info(target, is_party_target) {
                     let dmg = calculator::calculate_physical_damage(
-                        actor_attack, actor_element,
-                        self.party[target].defense, self.party[target].element,
+                        actor.attack, actor.element, t.defense, t.element,
                     );
-                    let modifier = calculator::element_modifier(actor_element, self.party[target].element);
-                    let killed = dmg >= self.party[target].hp;
-                    self.party[target].take_damage(dmg);
-                    results.push(AttackResult {
-                        attacker: actor_id, target: self.party[target].id,
-                        damage: dmg, element: actor_element, modifier, killed,
+                    let modifier = calculator::element_modifier(actor.element, t.element);
+                    let killed = dmg >= t.hp;
+                    self.apply_damage(target, is_party_target, dmg);
+                    self.results.push(AttackResult {
+                        attacker: actor.id, target: t.id,
+                        damage: dmg, element: actor.element, modifier, killed,
                     });
-                    self.logs.push(format!("{actor_name} attacks {} for {dmg} damage!",
-                        self.party[target].name));
+                    self.logs.push(format!("{} attacks {} for {dmg} damage!",
+                        actor.name, t.name));
                 }
             }
             BattleAction::Defend => {
-                self.logs.push(format!("{actor_name} defends!"));
+                self.logs.push(format!("{} defends!", actor.name));
             }
             BattleAction::Psynergy(psynergy, target) => {
-                if actor_pp < psynergy.pp_cost() {
+                if actor.pp < psynergy.pp_cost() {
                     self.logs.push("Not enough PP!".to_string());
-                } else if is_party_actor {
-                    if target < self.enemies.len() && self.enemies[target].is_alive() {
+                } else {
+                    let is_party_target = !is_party_actor;
+                    if let Some(t) = self.target_info(target, is_party_target) {
                         let dmg = calculator::calculate_psynergy_damage(
-                            actor_level, psynergy.element(),
-                            self.enemies[target].defense, self.enemies[target].element,
-                            psynergy,
+                            actor.level, psynergy.element(), t.defense, t.element, psynergy,
                         );
-                        let modifier = calculator::element_modifier(psynergy.element(), self.enemies[target].element);
-                        let killed = dmg >= self.enemies[target].hp;
-                        self.enemies[target].take_damage(dmg);
-                        results.push(AttackResult {
-                            attacker: actor_id, target: self.enemies[target].id,
+                        let modifier = calculator::element_modifier(psynergy.element(), t.element);
+                        let killed = dmg >= t.hp;
+                        self.apply_damage(target, is_party_target, dmg);
+                        self.results.push(AttackResult {
+                            attacker: actor.id, target: t.id,
                             damage: dmg, element: psynergy.element(), modifier, killed,
                         });
-                        self.logs.push(format!("{actor_name} uses {psynergy:?} on {} for {dmg} damage!",
-                            self.enemies[target].name));
+                        self.logs.push(format!("{} uses {:?} on {} for {dmg} damage!",
+                            actor.name, psynergy, t.name));
                     }
-                } else if target < self.party.len() && self.party[target].is_alive() {
-                    let dmg = calculator::calculate_psynergy_damage(
-                        actor_level, psynergy.element(),
-                        self.party[target].defense, self.party[target].element,
-                        psynergy,
-                    );
-                    let modifier = calculator::element_modifier(psynergy.element(), self.party[target].element);
-                    let killed = dmg >= self.party[target].hp;
-                    self.party[target].take_damage(dmg);
-                    results.push(AttackResult {
-                        attacker: actor_id, target: self.party[target].id,
-                        damage: dmg, element: psynergy.element(), modifier, killed,
-                    });
-                    self.logs.push(format!("{actor_name} uses {psynergy:?} on {} for {dmg} damage!",
-                        self.party[target].name));
                 }
             }
             BattleAction::Flee => {
@@ -241,18 +213,12 @@ impl Battle {
             }
         }
 
-        if let BattleAction::Psynergy(psynergy, _) = action {
-            if is_party_actor {
-                self.party[actor_idx].pp = self.party[actor_idx].pp.saturating_sub(psynergy.pp_cost());
-            } else {
-                let e_idx = actor_idx - self.party.len();
-                self.enemies[e_idx].pp = self.enemies[e_idx].pp.saturating_sub(psynergy.pp_cost());
-            }
+        let pp_cost = action.pp_cost();
+        if pp_cost > 0 {
+            self.deduct_pp(actor_idx, is_party_actor, pp_cost);
         }
 
-        self.results.append(&mut results);
         self.advance_phase();
-        self.results.clone()
     }
 
     /// 计算速度排序（降序）
@@ -266,10 +232,7 @@ impl Battle {
     }
 
     fn advance_phase(&mut self) {
-        if self.phase == BattlePhase::Victory
-            || self.phase == BattlePhase::Defeat
-            || self.phase == BattlePhase::FleeSuccess
-        {
+        if matches!(self.phase, BattlePhase::Victory | BattlePhase::Defeat | BattlePhase::FleeSuccess) {
             return;
         }
         if self.all_enemies_defeated() {
@@ -284,21 +247,11 @@ impl Battle {
         self.turn_index += 1;
         if self.turn_index >= self.turn_order.len() {
             self.turn_index = 0;
-            self.turn_order = Self::compute_speed_order(&self.party, &self.enemies);
-
-            let next = self.turn_order[0];
-            if next >= self.party.len() {
-                self.phase = BattlePhase::EnemyTurn;
-            } else {
-                self.phase = BattlePhase::PlayerInput;
-            }
+        }
+        if self.turn_order[self.turn_index] >= self.party.len() {
+            self.phase = BattlePhase::EnemyTurn;
         } else {
-            let next = self.turn_order[self.turn_index];
-            if next >= self.party.len() {
-                self.phase = BattlePhase::EnemyTurn;
-            } else {
-                self.phase = BattlePhase::PlayerInput;
-            }
+            self.phase = BattlePhase::PlayerInput;
         }
     }
 
@@ -310,6 +263,34 @@ impl Battle {
             }
         }
         BattleAction::Defend
+    }
+
+    fn actor_info(&self, idx: usize) -> ActorInfo {
+        if idx < self.party.len() {
+            let a = &self.party[idx];
+            ActorInfo { id: a.id, name: a.name, element: a.element, level: a.level, attack: a.attack, pp: a.pp }
+        } else {
+            let a = &self.enemies[idx - self.party.len()];
+            ActorInfo { id: a.id, name: a.name, element: a.element, level: a.level, attack: a.attack, pp: a.pp }
+        }
+    }
+
+    fn target_info(&self, target: usize, is_party_target: bool) -> Option<TargetInfo> {
+        let arr = if is_party_target { &self.party } else { &self.enemies };
+        arr.get(target).filter(|c| c.is_alive()).map(|c| TargetInfo {
+            defense: c.defense, element: c.element, hp: c.hp, id: c.id, name: c.name,
+        })
+    }
+
+    fn apply_damage(&mut self, target: usize, is_party_target: bool, dmg: u32) {
+        let arr = if is_party_target { &mut self.party } else { &mut self.enemies };
+        arr[target].take_damage(dmg);
+    }
+
+    fn deduct_pp(&mut self, actor_idx: usize, is_party: bool, cost: u32) {
+        let idx = if is_party { actor_idx } else { actor_idx - self.party.len() };
+        let arr = if is_party { &mut self.party } else { &mut self.enemies };
+        arr[idx].pp = arr[idx].pp.saturating_sub(cost);
     }
 }
 

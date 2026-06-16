@@ -125,7 +125,7 @@ impl GameCtx {
             draw_text(display, constants::DIALOGUE_TEXT_X, constants::DIALOGUE_TEXT_Y,
                 constants::DIALOGUE_TEXT_SIZE, WHITE);
 
-            if d.finished {
+            if d.is_finished() {
                 draw_text("▼", self.config.width - 30.0, y + h - 10.0, 14.0, WHITE);
             }
         }
@@ -174,8 +174,9 @@ impl GameCtx {
     #[cfg(debug_assertions)]
     fn draw_battle(&self) {
         let Some(ref battle) = self.battle else { return; };
+        const SEP: &str = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
         draw_text("⚔️ BATTLE ⚔️", 10.0, 20.0, 24.0, YELLOW);
-        draw_text("━".repeat(28), 10.0, 30.0, 14.0, GRAY);
+        draw_text(SEP, 10.0, 30.0, 14.0, GRAY);
 
         let mut y = constants::BATTLE_ENEMY_NAME_Y;
         for e in &battle.enemies {

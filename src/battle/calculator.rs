@@ -15,7 +15,7 @@ const ELEMENT_TABLE: [[f32; 4]; 4] = [
 
 /// O(1) 分支无关元素克制查询
 pub fn element_modifier(atk: Element, def: Element) -> f32 {
-    ELEMENT_TABLE[atk as u8 as usize][def as u8 as usize]
+    ELEMENT_TABLE[atk as usize][def as usize]
 }
 
 /// 物理攻击伤害（接收原始属性，无需 Combatant 构造）
