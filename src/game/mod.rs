@@ -12,7 +12,6 @@ use golden_sun::entity::{create_vale_npcs, Entity};
 use golden_sun::dialogue::{DialogueState, StoryFlags};
 use golden_sun::entity::sprite::{self, AnimState};
 use golden_sun::map::TileKind;
-use golden_sun::Element;
 use macroquad::prelude::*;
 
 const PLAYER_START_X: f32 = 15.0;
@@ -91,6 +90,15 @@ pub struct GameCtx {
     story_flags: StoryFlags,
     // ── Phase 5: 战斗 ──
     battle: Option<Battle>,
+    // ── Phase 6: 菜单 ──
+    menu_selection: usize,
+    menu_page: usize,  // 0=main, 1=items, 2=psynergy, 3=status
+    /// 金币
+    gold: u32,
+    /// 随机遇敌步数计数器（每步递减）
+    encounter_step: u32,
+    /// StorageBackend（存档用）
+    _storage: Box<dyn golden_sun::engine::storage::StorageBackend>,
 }
 
 impl GameCtx {
@@ -118,27 +126,90 @@ impl GameCtx {
             dialogue: None,
             story_flags: StoryFlags::new(),
             battle: None,
+            menu_selection: 0,
+            menu_page: 0,
+            gold: 0,
+            encounter_step: 0,
+            _storage: golden_sun::engine::storage::create_storage(),
         }
     }
 
-    /// 创建默认参战队伍（Isaac + Garet）
-    #[allow(dead_code)]
-    fn make_party() -> Vec<Combatant> {
-        vec![
-            Combatant::new(1, "Isaac", 5, Element::Venus, true),
-            Combatant::new(2, "Garet", 5, Element::Mars, true),
-        ]
+    /// 启动随机遭遇战
+    pub fn start_random_battle(&mut self) {
+        let party = vec![
+            Combatant::new(1, "Isaac", 5, golden_sun::Element::Venus, true),
+            Combatant::new(2, "Garet", 5, golden_sun::Element::Mars, true),
+        ];
+        let enemies = vec![
+            Combatant::new(10, "Wolf", 3, golden_sun::Element::Jupiter, false),
+            Combatant::new(11, "Bat", 2, golden_sun::Element::Mercury, false),
+        ];
+        self.battle = Some(Battle::new(party, enemies));
+        self.state = GameState::Battle;
+        #[cfg(debug_assertions)]
+        eprintln!("遭遇战开始");
     }
 
-    /// 启动一场遭遇战
+    /// 保存游戏到 StorageBackend
+    pub fn save_game(&mut self) {
+        use golden_sun::SaveData;
+        let psynergies: Vec<String> = self.unlocked_psynergies[..self.unlocked_count]
+            .iter().map(|p| format!("{p:?}")).collect();
+        let data = SaveData {
+            scene: "Vale".into(),
+            player_x: self.camera.x,
+            player_y: self.camera.y,
+            player_rotation: self.camera.rotation,
+            flags: std::collections::HashMap::new(),
+            inventory: Vec::new(),
+            psynergies,
+            gold: 0,
+            player_hp: 100,
+            player_pp: self.pp,
+            timestamp: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs())
+                .unwrap_or(0),
+        };
+        if let Ok(bytes) = bincode::serialize(&data) {
+            if self._storage.save("save", &bytes).is_ok() {
+                #[cfg(debug_assertions)]
+                eprintln!("游戏已保存 ({:.1}, {:.1})", self.camera.x, self.camera.y);
+            }
+        }
+    }
+
+    /// 从 StorageBackend 读档
+    pub fn load_game(&mut self) -> bool {
+        use golden_sun::SaveData;
+        match self._storage.load("save") {
+            Ok(Some(bytes)) => {
+                match bincode::deserialize::<SaveData>(&bytes) {
+                    Ok(data) => {
+                        self.camera = Camera::new(data.player_x, data.player_y);
+                        self.camera.rotation = data.player_rotation;
+                        self.pp = data.player_pp;
+                        self.state = GameState::WorldMap;
+                        #[cfg(debug_assertions)]
+                        eprintln!("游戏已读档 ({:.1}, {:.1})", data.player_x, data.player_y);
+                        true
+                    }
+                    Err(_) => false,
+                }
+            }
+            _ => false,
+        }
+    }
+
+    /// 触发场景过渡动画
     #[allow(dead_code)]
-    pub fn start_battle(&mut self) {
-        let enemies = vec![
-            Combatant::new(10, "Wolf", 3, Element::Jupiter, false),
-            Combatant::new(11, "Bat", 2, Element::Mercury, false),
-        ];
-        self.battle = Some(Battle::new(Self::make_party(), enemies));
-        self.state = GameState::Battle;
+    pub fn start_transition(&mut self, kind: golden_sun::engine::TransitionKind) {
+        self.state = GameState::Transition {
+            kind,
+            timer: 0.0,
+            from: "",
+            to: "",
+        };
     }
 
     pub fn step(&mut self) {

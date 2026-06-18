@@ -16,9 +16,9 @@ crate-type = ["lib"]
 
 [dependencies]
 macroquad = "0.4"
+quad-rand = "0.2"
 serde = { version = "1", features = ["derive"] }
-# glam 由 macroquad 内部提供 (0.27)，无需直接依赖
-# bincode: Phase 6 序列化存档时按需引入
+bincode = "1"
 # base64 crate 暂不引入 — wasm32 LocalStorage 用简易 hex 编码
 # Phase 6 如需更紧凑的存档编码，可取消注释：
 # base64 = "0.22"

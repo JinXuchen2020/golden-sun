@@ -29,11 +29,11 @@ Phase 0 [项目骨架] → Phase 1 [Mode7世界地图] → Phase 2 [精灵与NPC
 |---|------|------|------------|------|------|
 | 0 | 项目骨架初始化 | ✅ | `prompts/00_project_setup.md` | 无 | V6: 引擎模块拆分 + PsynergyType/Element预定义 + SceneId/SaveData/SceneRegistry |
 | 1 | Mode 7 世界地图 | ✅ | `prompts/01_mode7_world_map.md` | Phase 0 | tilemap(32×32 Vale村)+mode7渲染+碰撞检测+玩家移动+菱形标记 |
-| 2 | 精灵与 NPC | ⬜ | `prompts/02_sprite_entity.md` | Phase 0 | 帧动画 + NPC 交互（不依赖 Mode 7，可并行） |
-| 3 | 精灵力系统 | ⬜ | `prompts/03_psynergy.md` | Phase 0 | 7 种精灵力（PsynergyType 已预定义） |
-| 4 | 对话引擎 | ⬜ | `prompts/04_dialogue.md` | Phase 2 | 对话树 + 事件 |
-| 5 | 战斗系统 | ⬜ | `prompts/05_battle.md` | Phase 0, Phase 3 | 回合制战斗（PsynergyType+Element 已可用） |
-| 6 | UI/音频/收尾 | ⬜ | `prompts/06_ui_audio.md` | Phase 1-5 | HUD + 存档(SaveData) + 标题 + GBA音频 |
+| 2 | 精灵与 NPC | ✅ | `prompts/02_sprite_entity.md` | Phase 0 | 帧动画 + 3NPC + WalkPattern巡逻 + GPU纹理渲染 |
+| 3 | 精灵力系统 | ✅ | `prompts/03_psynergy.md` | Phase 0 | 7种精灵力 + PP管理 + 选择UI + Force/Flash/Reveal |
+| 4 | 对话引擎 | ✅ | `prompts/04_dialogue.md` | Phase 2 | DialogueState打字机 + StoryFlags + 3NPC脚本 |
+| 5 | 战斗系统 | ✅ | `prompts/05_battle.md` | Phase 0, Phase 3 | 回合制战斗 + 元素克制 + AI + 随机遇敌 |
+| 6 | UI/音频/收尾 | ⚠️ | `prompts/06_ui_audio.md` | Phase 1-5 | HUD + 菜单 + 存档 + 方波SFX + 场景过渡 (~60%) |
 
 ## 架构资产（Phase 0 优化 V6 — 最新）
 

@@ -108,9 +108,8 @@ fn typewriter_a_key_skip() {
 
 #[test]
 fn dialogue_action_give_item() {
-    // 物品 = 设置 flag "has_potion"
     let mut flags = StoryFlags::new();
-    DialogueAction::SetFlag("has_potion").apply(&mut flags);
+    flags.set("has_potion");
     assert!(flags.get("has_potion"));
 }
 
@@ -119,7 +118,7 @@ fn dialogue_action_give_item() {
 #[test]
 fn dialogue_action_set_flag() {
     let mut flags = StoryFlags::new();
-    DialogueAction::SetFlag("talked_to_elder").apply(&mut flags);
+    flags.set("talked_to_elder");
     assert!(flags.get("talked_to_elder"));
 }
 
@@ -128,9 +127,6 @@ fn dialogue_action_set_flag() {
 #[test]
 fn dialogue_action_unlock_psynergy() {
     let action = DialogueAction::UnlockPsynergy(PsynergyType::Whirlwind);
-    // apply returns None (needs GameCtx coordination)
-    let mut flags = StoryFlags::new();
-    action.apply(&mut flags);
     match action {
         DialogueAction::UnlockPsynergy(p) => assert_eq!(p, PsynergyType::Whirlwind),
         _ => panic!("wrong variant"),
@@ -142,8 +138,6 @@ fn dialogue_action_unlock_psynergy() {
 #[test]
 fn dialogue_action_teleport() {
     let action = DialogueAction::Teleport(15.0, 10.0);
-    let mut flags = StoryFlags::new();
-    action.apply(&mut flags);
     match action {
         DialogueAction::Teleport(x, y) => {
             assert!((x - 15.0).abs() < 0.001);
@@ -158,8 +152,6 @@ fn dialogue_action_teleport() {
 #[test]
 fn dialogue_action_start_battle() {
     let action = DialogueAction::StartBattle;
-    let mut flags = StoryFlags::new();
-    action.apply(&mut flags);
     assert_eq!(action, DialogueAction::StartBattle);
 }
 

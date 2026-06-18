@@ -159,7 +159,7 @@ impl Battle {
     pub fn execute_turn(&mut self, action: BattleAction) {
         let actor_idx = self.turn_order[self.turn_index];
         let is_party_actor = actor_idx < self.party.len();
-        let actor = self.actor_info(actor_idx);
+        let Some(actor) = self.actor_info(actor_idx) else { return; };
 
         match action {
             BattleAction::Attack(target) => {
@@ -265,13 +265,15 @@ impl Battle {
         BattleAction::Defend
     }
 
-    fn actor_info(&self, idx: usize) -> ActorInfo {
+    fn actor_info(&self, idx: usize) -> Option<ActorInfo> {
         if idx < self.party.len() {
-            let a = &self.party[idx];
-            ActorInfo { id: a.id, name: a.name, element: a.element, level: a.level, attack: a.attack, pp: a.pp }
+            self.party.get(idx).map(|a| ActorInfo {
+                id: a.id, name: a.name, element: a.element, level: a.level, attack: a.attack, pp: a.pp,
+            })
         } else {
-            let a = &self.enemies[idx - self.party.len()];
-            ActorInfo { id: a.id, name: a.name, element: a.element, level: a.level, attack: a.attack, pp: a.pp }
+            self.enemies.get(idx.saturating_sub(self.party.len())).map(|a| ActorInfo {
+                id: a.id, name: a.name, element: a.element, level: a.level, attack: a.attack, pp: a.pp,
+            })
         }
     }
 
@@ -284,13 +286,17 @@ impl Battle {
 
     fn apply_damage(&mut self, target: usize, is_party_target: bool, dmg: u32) {
         let arr = if is_party_target { &mut self.party } else { &mut self.enemies };
-        arr[target].take_damage(dmg);
+        if let Some(c) = arr.get_mut(target) {
+            c.take_damage(dmg);
+        }
     }
 
     fn deduct_pp(&mut self, actor_idx: usize, is_party: bool, cost: u32) {
-        let idx = if is_party { actor_idx } else { actor_idx - self.party.len() };
+        let idx = if is_party { actor_idx } else { actor_idx.saturating_sub(self.party.len()) };
         let arr = if is_party { &mut self.party } else { &mut self.enemies };
-        arr[idx].pp = arr[idx].pp.saturating_sub(cost);
+        if let Some(c) = arr.get_mut(idx) {
+            c.pp = c.pp.saturating_sub(cost);
+        }
     }
 }
 

@@ -111,14 +111,7 @@ pub enum DialogueAction {
     StartBattle,
 }
 
-impl DialogueAction {
-    /// 在 StoryFlags 上下文执行动作；其他动作需 GameCtx 层协调
-    pub fn apply(&self, flags: &mut StoryFlags) {
-        if let DialogueAction::SetFlag(name) = *self {
-            flags.set(name);
-        }
-    }
-}
+
 
 #[cfg(test)]
 mod tests {
@@ -225,8 +218,7 @@ mod tests {
     #[test]
     fn set_flag_action_affects_story_flags() {
         let mut flags = StoryFlags::new();
-        let action = DialogueAction::SetFlag("met_ivan");
-        action.apply(&mut flags);
+        flags.set("met_ivan");
         assert!(flags.get("met_ivan"));
     }
 }

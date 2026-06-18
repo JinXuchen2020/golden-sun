@@ -17,6 +17,7 @@ impl GameCtx {
             GameState::Title => self.draw_title(),
             GameState::WorldMap => {
                 self.draw_world_map();
+                self.draw_hud();
                 #[cfg(debug_assertions)]
                 self.draw_debug();
             }
@@ -39,13 +40,16 @@ impl GameCtx {
                 #[cfg(debug_assertions)]
                 self.draw_debug();
             }
+            GameState::Transition { kind, timer, .. } => {
+                self.draw_world_map();
+                golden_sun::ui::draw_transition(timer, kind);
+            }
             _ => self.draw_placeholder(),
         }
     }
 
     fn draw_title(&self) {
-        draw_text("Golden Sun - Rust Edition", 40.0, 200.0, 36.0, WHITE);
-        draw_text("按 Z / Enter 开始", 100.0, 260.0, 20.0, constants::TITLE_TEXT_COLOR);
+        golden_sun::ui::draw_title_screen();
     }
 
     fn draw_placeholder(&self) {
@@ -171,7 +175,6 @@ impl GameCtx {
         }
     }
 
-    #[cfg(debug_assertions)]
     fn draw_battle(&self) {
         let Some(ref battle) = self.battle else { return; };
         const SEP: &str = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
@@ -222,12 +225,30 @@ impl GameCtx {
     }
 
     fn draw_menu(&self) {
-        draw_rectangle(0.0, 0.0, self.config.width, self.config.height,
-            Color::from_rgba(0, 0, 0, 180));
-        draw_text("MENU", 10.0, 30.0, 24.0, WHITE);
-        let pp_line = format!("PP: {}/{}", self.pp, self.max_pp);
-        draw_text(&pp_line, 10.0, 70.0, 18.0, LIGHTGRAY);
+        const MAIN_ITEMS: [&str; 6] = ["Continue", "Items", "Psynergy", "Status", "Save", "Quit"];
+        if self.menu_page == 0 {
+            golden_sun::ui::draw_pause_menu(self.menu_selection, &MAIN_ITEMS);
+        } else if self.menu_page == 1 {
+            golden_sun::ui::draw_status_screen(self.pp, self.max_pp, self.gold, &["暂无道具"]);
+        } else if self.menu_page == 2 || self.menu_page == 3 {
+            let names: Vec<&str> = self.unlocked_psynergies[..self.unlocked_count]
+                .iter().map(|p| match p {
+                    golden_sun::PsynergyType::Whirlwind => "Whirlwind",
+                    golden_sun::PsynergyType::Growth => "Growth",
+                    golden_sun::PsynergyType::Freeze => "Freeze",
+                    golden_sun::PsynergyType::Force => "Force",
+                    golden_sun::PsynergyType::Catch => "Catch",
+                    golden_sun::PsynergyType::Flash => "Flash",
+                    golden_sun::PsynergyType::Reveal => "Reveal",
+                }).collect();
+            golden_sun::ui::draw_status_screen(self.pp, self.max_pp, self.gold, &names);
+        }
         draw_text("Press Cancel to close", 10.0, self.config.height - 20.0, 14.0, GRAY);
+    }
+
+    /// 游戏内 HUD
+    fn draw_hud(&self) {
+        golden_sun::ui::draw_hud(self.pp, self.max_pp, "Vale Village");
     }
 
     fn draw_debug(&self) {

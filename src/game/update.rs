@@ -27,6 +27,17 @@ impl GameCtx {
 
         self.scene.commit_switch();
 
+        // 场景过渡：推进计时器，解除借用后再改 state
+        let transition_finished = if let GameState::Transition { ref mut timer, .. } = self.state {
+            *timer += self.time.delta;
+            *timer >= 1.0
+        } else {
+            false
+        };
+        if transition_finished {
+            self.state = GameState::WorldMap;
+            return;
+        }
         if self.state.is_transition() {
             return;
         }
@@ -41,12 +52,18 @@ impl GameCtx {
                         Entity::tile_to_world(super::PLAYER_START_X, super::PLAYER_START_Y));
                     self.state = GameState::WorldMap;
                 }
+                // Secondary → 尝试读档
+                if self.input_bus.consume(InputEvent::Secondary) && !self.load_game() {
+                    #[cfg(debug_assertions)]
+                    eprintln!("没有存档");
+                }
             }
             GameState::WorldMap => {
                 let moving = self.update_player();
                 self.update_npcs();
                 self.camera.update_lerp(self.time.delta);
                 self.recover_pp(moving);
+                self.trigger_random_encounter(moving);
 
                 if self.input_bus.consume(InputEvent::Confirm) {
                     if let Some(npc) = self.find_nearby_npc() {
@@ -114,7 +131,40 @@ impl GameCtx {
                 }
             }
             GameState::Menu => {
-                if self.input_bus.consume(InputEvent::Cancel) {
+                const MENU_ITEMS: [&str; 6] = ["Continue", "Items", "Psynergy", "Status", "Save", "Quit"];
+                if self.menu_page == 0 {
+                    // 主菜单导航
+                    if self.input_bus.consume(InputEvent::Up) {
+                        self.menu_selection = self.menu_selection.saturating_sub(1);
+                    }
+                    if self.input_bus.consume(InputEvent::Down) {
+                        self.menu_selection = (self.menu_selection + 1).min(MENU_ITEMS.len() - 1);
+                    }
+                    if self.input_bus.consume(InputEvent::Confirm) {
+                        match self.menu_selection {
+                            0 => self.state = GameState::WorldMap,   // Continue
+                            1 => self.menu_page = 1,                  // Items
+                            2 => self.menu_page = 2,                  // Psynergy
+                            3 => self.menu_page = 3,                  // Status
+                            4 => self.save_game(),                    // Save
+                            5 => {                                     // Quit
+                                self.camera = Camera::new(super::PLAYER_START_X, super::PLAYER_START_Y);
+                                self.pp = constants::PP_INITIAL;
+                                self.modified_tiles.clear();
+                                self.state = GameState::Title;
+                            }
+                            _ => {}
+                        }
+                        self.menu_selection = 0;
+                    }
+                } else {
+                    // 子页面：Cancel 返回主菜单
+                    if self.input_bus.consume(InputEvent::Cancel) {
+                        self.menu_page = 0;
+                        self.menu_selection = 0;
+                    }
+                }
+                if self.menu_page == 0 && self.input_bus.consume(InputEvent::Cancel) {
                     self.state = GameState::WorldMap;
                 }
             }
@@ -266,6 +316,28 @@ impl GameCtx {
             self.pp = (self.pp + constants::PP_RECOVER_AMOUNT).min(self.max_pp);
             self.pp_recover_timer = 0.0;
             dbg!("PP 恢复至 {}", self.pp);
+        }
+    }
+
+    /// 随机遇敌：行走在 Forest tile 上时概率触发
+    fn trigger_random_encounter(&mut self, moving: bool) {
+        if !moving || self.battle.is_some() { return; }
+
+        let tx = self.camera.x.floor() as i32;
+        let ty = self.camera.y.floor() as i32;
+        let tile = self.effective_tile(tx, ty);
+
+        // 只在 Forest 触发
+        if tile != golden_sun::map::TileKind::Forest { return; }
+
+        // 步数倒数：Forest 上每 5-12 步触发一次
+        if self.encounter_step == 0 {
+            self.encounter_step = quad_rand::gen_range(5u32, 13);
+        }
+        self.encounter_step -= 1;
+
+        if self.encounter_step == 0 {
+            self.start_random_battle();
         }
     }
 

@@ -129,3 +129,23 @@ pub const BATTLE_LOG_MAX: usize = 5;
 /// 敌人名称文本 Y 偏移
 pub const BATTLE_ENEMY_NAME_Y: f32 = 30.0;
 
+// ── 音频（Phase 6） ──
+/// 采样率
+pub const AUDIO_SAMPLE_RATE: u32 = 44100;
+/// 确认音频率（Hz）
+pub const SFX_CONFIRM_FREQ: f32 = 440.0;
+/// 确认音持续时间（ms）
+pub const SFX_CONFIRM_MS: u32 = 100;
+/// 取消音频率（Hz）
+pub const SFX_CANCEL_FREQ: f32 = 220.0;
+/// 取消音持续时间（ms）
+pub const SFX_CANCEL_MS: u32 = 80;
+
+// ── HUD（Phase 6） ──
+/// HUD 左上角文本 X 偏移
+pub const HUD_X: f32 = 10.0;
+/// HUD 文本 Y 偏移
+pub const HUD_Y: f32 = 20.0;
+/// HUD 文本字号
+pub const HUD_TEXT_SIZE: f32 = 16.0;
+

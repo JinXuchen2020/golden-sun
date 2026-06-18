@@ -37,9 +37,9 @@ impl DialogueScript {
     pub fn page_count(&self) -> usize { self.pages.len() }
 }
 
-/// NPC 对话数据库（二分查找，O(log n)）
+/// NPC 对话数据库（线性查找，n≤3 时比二分更快）
 pub fn get_script(id: &str) -> Option<&'static DialogueScript> {
-    NPC_SCRIPTS.binary_search_by_key(&id, |(k, _)| k).ok().map(|i| NPC_SCRIPTS[i].1)
+    NPC_SCRIPTS.iter().find(|(k, _)| *k == id).map(|(_, s)| *s)
 }
 
 // ── Vale 村 NPC 对话 ──
@@ -63,7 +63,6 @@ const GARSMIN_LINES: &[DialogueLine] = &[
     DialogueLine { text: GARSMIN_TEXT, actions: &[DialogueAction::SetFlag("met_garsmin")] },
 ];
 
-/// 按 key 排序（二分查找要求）
 const NPC_SCRIPTS: &[(&str, &DialogueScript)] = &[
     ("garsmin", &DialogueScript {
         pages: &[
