@@ -149,6 +149,45 @@ fn draw_npc(pixels: &mut [u8], walk: bool, frame: u32, dir: Direction, hat: (u8,
     }
 }
 
+/// 绘制 Garet（金色头发 + 蓝盔甲）
+fn draw_garet(pixels: &mut [u8], walk: bool, frame: u32) {
+    let leg_offset = if walk && frame == 1 { 1 } else { 0 };
+
+    fill_rect(pixels, 5, 1, 10, 2, (240, 200, 80));
+    fill_rect(pixels, 4, 3, 5, 4, (240, 200, 80));
+    fill_rect(pixels, 10, 3, 11, 4, (240, 200, 80));
+    fill_rect(pixels, 5, 3, 10, 5, SKIN);
+    fill_rect(pixels, 4, 6, 11, 9, (60, 100, 200));
+    fill_rect(pixels, 3, 7, 4, 8, (60, 100, 200));
+    fill_rect(pixels, 11, 7, 12, 8, (60, 100, 200));
+    fill_rect(pixels, 3, 9, 4, 11, (60, 100, 200));
+    fill_rect(pixels, 11, 9, 12, 11, (60, 100, 200));
+    fill_rect(pixels, 5, 10, 7, 13, (60, 40, 60));
+    fill_rect(pixels, 8, 10, 10, 13, (60, 40, 60));
+    if leg_offset == 1 {
+        fill_rect(pixels, 4, 13, 7, 14, (60, 40, 60));
+        fill_rect(pixels, 9, 13, 12, 14, (60, 40, 60));
+    } else {
+        fill_rect(pixels, 5, 13, 7, 14, (60, 40, 60));
+        fill_rect(pixels, 8, 13, 10, 14, (60, 40, 60));
+    }
+}
+
+/// 绘制简单敌人（紫色蝙蝠）
+fn draw_enemy(pixels: &mut [u8], walk: bool, frame: u32) {
+    let wing_offset = if walk && frame == 1 { 1 } else { 0 };
+
+    fill_rect(pixels, 6, 5, 9, 8, (160, 80, 200));
+    fill_rect(pixels, 7, 6, 8, 7, (255, 200, 200));
+    if wing_offset == 1 {
+        fill_rect(pixels, 2, 3, 5, 6, (120, 60, 160));
+        fill_rect(pixels, 10, 3, 13, 6, (120, 60, 160));
+    } else {
+        fill_rect(pixels, 2, 4, 5, 7, (120, 60, 160));
+        fill_rect(pixels, 10, 4, 13, 7, (120, 60, 160));
+    }
+}
+
 fn build_anim(frames: Vec<AnimFrame>) -> Animation {
     Animation { frames }
 }
@@ -200,6 +239,32 @@ pub fn generate_npc_animations(hat: (u8, u8, u8), body: (u8, u8, u8)) -> Vec<(An
         result.push((state, build_anim(frames)));
     }
     result
+}
+
+/// 生成战斗角色纹理 — 返回 4 个静态帧（玩家1/2 + 敌人1/2）
+#[must_use]
+pub fn generate_battle_sprites() -> [Vec<AnimFrame>; 4] {
+    // [0] = 玩家1 (Isaac/Robin) idle down
+    let mut p1 = make_blank_frame();
+    draw_robin(&mut p1.pixels, false, 0);
+    let p1_frames = vec![p1];
+
+    // [1] = 玩家2 (Garet) idle down
+    let mut p2 = make_blank_frame();
+    draw_garet(&mut p2.pixels, false, 0);
+    let p2_frames = vec![p2];
+
+    // [2] = 敌人1 (Wolf) idle
+    let mut e1 = make_blank_frame();
+    draw_enemy(&mut e1.pixels, false, 0);
+    let e1_frames = vec![e1];
+
+    // [3] = 敌人2 (Bat) idle
+    let mut e2 = make_blank_frame();
+    draw_enemy(&mut e2.pixels, false, 1);
+    let e2_frames = vec![e2];
+
+    [p1_frames, p2_frames, e1_frames, e2_frames]
 }
 
 #[cfg(test)]

@@ -126,3 +126,48 @@ impl BgmPlayer {
         }
     }
 }
+
+/// 播放一次性音效 — 使用预加载的 Sound
+pub fn play_sfx(sound: &Sound) {
+    macroquad::audio::play_sound_once(sound);
+}
+
+/// SFX 管理器 — 预加载音效 Sound 对象
+pub struct SfxManager {
+    sounds: HashMap<&'static str, Sound>,
+}
+
+impl SfxManager {
+    /// 异步创建 SFX 管理器
+    pub async fn new() -> Self {
+        let mut sounds = HashMap::new();
+        sounds.insert("confirm", generate_sfx_sound(440.0, 0.1, 0.5).await);
+        sounds.insert("cancel", generate_sfx_sound(220.0, 0.08, 0.4).await);
+        sounds.insert("hurt", generate_sfx_sound(180.0, 0.15, 0.6).await);
+        sounds.insert("heal", generate_sfx_sound(660.0, 0.2, 0.4).await);
+        sounds.insert("psynergy", generate_sfx_sound(550.0, 0.3, 0.5).await);
+        Self { sounds }
+    }
+
+    pub fn play(&self, name: &str) {
+        if let Some(sound) = self.sounds.get(name) {
+            play_sfx(sound);
+        }
+    }
+}
+
+/// 生成方波 PCM → WAV → Sound（异步）
+async fn generate_sfx_sound(freq: f32, duration_s: f32, volume: f32) -> Sound {
+    let num_samples = (SAMPLE_RATE as f32 * duration_s) as usize;
+    let phase_inc = freq / SAMPLE_RATE as f32;
+    let inv_n = 1.0 / num_samples as f32;
+    let mut pcm = Vec::with_capacity(num_samples);
+    let mut phase = 0.0;
+    for i in 0..num_samples {
+        let envelope = 1.0 - i as f32 * inv_n;
+        pcm.push(if phase < 0.5 { volume * envelope } else { -volume * envelope });
+        phase = (phase + phase_inc).fract();
+    }
+    let wav = pcm_to_wav(&pcm, SAMPLE_RATE);
+    macroquad::audio::load_sound_from_bytes(&wav).await.unwrap()
+}

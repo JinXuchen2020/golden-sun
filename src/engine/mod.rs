@@ -11,9 +11,11 @@ pub mod resources;
 pub mod storage;
 pub mod texture;
 pub mod window_config;
+pub mod particle;
+pub mod replay;
 
 pub use camera::Camera;
 pub use frame_time::FrameTime;
-pub use game_state::{GameState, TransitionKind};
+pub use game_state::{GameState, PsynergyAnim, TransitionKind};
 pub use input::{InputBus, InputEvent, InputState};
 pub use window_config::WindowConfig;

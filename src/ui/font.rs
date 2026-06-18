@@ -8,6 +8,7 @@ use macroquad::prelude::*;
 // ── 字形定义 ──
 // 每个 u64 = 8 字节，每个字节 = 一行像素（MSB 左）
 
+#[allow(clippy::too_many_arguments)]
 const fn glyph(s0: u8, s1: u8, s2: u8, s3: u8, s4: u8, s5: u8, s6: u8, s7: u8) -> u64 {
     (s0 as u64) << 56 | (s1 as u64) << 48 | (s2 as u64) << 40 | (s3 as u64) << 32
         | (s4 as u64) << 24 | (s5 as u64) << 16 | (s6 as u64) << 8 | s7 as u64
@@ -22,14 +23,20 @@ pub struct PixelFont {
     _fg: Color,
 }
 
-/// 颜色查找表：RGB 值 → 索引（0=透明, 1=前景色）
+/// 字体变体
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FontVariant {
+    Standard,
+    Compact,
+}
+
 impl PixelFont {
     /// 构建像素字体图集
     pub fn new(fg: Color) -> Self {
         let glyphs = ALL_GLYPHS;
         let count = glyphs.len() as u32;
         let cols = 8u32.min(count);
-        let rows = (count + cols - 1) / cols;
+        let rows = count.div_ceil(cols);
         let gw = 8u32;
         let gh = 8u32;
         let w = gw * cols;
@@ -59,7 +66,7 @@ impl PixelFont {
             }
         }
 
-        let img = Image { width: w as u16, height: h as u16, bytes: bytes.into() };
+        let img = Image { width: w as u16, height: h as u16, bytes };
         let atlas = Texture2D::from_image(&img);
         atlas.set_filter(FilterMode::Nearest);
 
@@ -71,6 +78,32 @@ impl PixelFont {
         let gw = self.glyph_w as f32 * scale;
         let gh = self.glyph_h as f32 * scale;
         let _atlas_w = self.atlas.width();
+
+        for (i, ch) in text.chars().enumerate() {
+            let idx = char_to_index(ch);
+            if idx >= ALL_GLYPHS.len() { continue; }
+
+            let sx = (idx as u32 % self.cols) * self.glyph_w;
+            let sy = (idx as u32 / self.cols) * self.glyph_h;
+
+            let dx = x + i as f32 * gw;
+            let dy = y;
+
+            draw_texture_ex(&self.atlas, dx, dy - gh, WHITE, DrawTextureParams {
+                source: Some(Rect::new(sx as f32, sy as f32, self.glyph_w as f32, self.glyph_h as f32)),
+                dest_size: Some(Vec2::new(gw, gh)),
+                ..Default::default()
+            });
+        }
+    }
+
+    /// 按变体绘制像素文字
+    pub fn draw_text_variant(&self, text: &str, x: f32, y: f32, scale: f32, variant: FontVariant) {
+        let gw = match variant {
+            FontVariant::Standard => self.glyph_w as f32 * scale,
+            FontVariant::Compact => 6.0 * scale,
+        };
+        let gh = self.glyph_h as f32 * scale;
 
         for (i, ch) in text.chars().enumerate() {
             let idx = char_to_index(ch);
@@ -129,7 +162,7 @@ const ALL_GLYPHS: &[u64] = &[
     glyph(0b00111100,0b01100110,0b00000110,0b00001100,0b00110000,0b01100000,0b01111110,0b00000000), // 2
     glyph(0b00111100,0b01100110,0b00000110,0b00011100,0b00000110,0b01100110,0b00111100,0b00000000), // 3
     glyph(0b00001100,0b00011100,0b00111100,0b01101100,0b01111110,0b00001100,0b00001100,0b00000000), // 4
-    glyph(0b01111110,0b01100000,0b01111100,0b00000110,0b00000110,0b01100110,0b00111100,0b00000000), // 5
+    glyph(0b01111110,0b01100000,0b01100000,0b01111100,0b01100000,0b01100000,0b01111110,0b00000000), // 5
     glyph(0b00111100,0b01100000,0b01100000,0b01111100,0b01100110,0b01100110,0b00111100,0b00000000), // 6
     glyph(0b01111110,0b00000110,0b00001100,0b00011000,0b00110000,0b00110000,0b00110000,0b00000000), // 7
     glyph(0b00111100,0b01100110,0b01100110,0b00111100,0b01100110,0b01100110,0b00111100,0b00000000), // 8

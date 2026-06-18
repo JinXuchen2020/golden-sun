@@ -10,6 +10,7 @@
 pub mod sprite;
 
 use crate::engine::constants::{ANIM_FRAME_DURATION, NPC_INTERACT_RANGE, TILE_SIZE};
+use crate::SceneId;
 use sprite::AnimState;
 
 /// 朝向
@@ -113,6 +114,37 @@ pub fn create_vale_npcs() -> Vec<Entity> {
     ]
 }
 
+/// 按场景创建 NPC 列表
+#[must_use]
+pub fn create_npcs_for_scene(scene: SceneId) -> Vec<Entity> {
+    match scene {
+        SceneId::Vale => create_vale_npcs(),
+        SceneId::WildForest => create_wild_forest_npcs(),
+        SceneId::Cave => create_cave_npcs(),
+        _ => create_vale_npcs(),
+    }
+}
+
+fn create_wild_forest_npcs() -> Vec<Entity> {
+    vec![
+        Entity::new_npc(
+            10, Entity::tile_to_world(10.0, 10.0),
+            Direction::Down, "forest_traveler",
+            None,
+        ),
+    ]
+}
+
+fn create_cave_npcs() -> Vec<Entity> {
+    vec![
+        Entity::new_npc(
+            20, Entity::tile_to_world(8.0, 8.0),
+            Direction::Up, "cave_sage",
+            None,
+        ),
+    ]
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -142,5 +174,16 @@ mod tests {
     fn vale_has_three_npcs() {
         let npcs = create_vale_npcs();
         assert_eq!(npcs.len(), 3);
+    }
+
+    #[test]
+    fn per_scene_npc_creation() {
+        use crate::SceneId;
+        let vale = create_npcs_for_scene(SceneId::Vale);
+        assert_eq!(vale.len(), 3);
+        let forest = create_npcs_for_scene(SceneId::WildForest);
+        assert_eq!(forest.len(), 1);
+        let cave = create_npcs_for_scene(SceneId::Cave);
+        assert_eq!(cave.len(), 1);
     }
 }

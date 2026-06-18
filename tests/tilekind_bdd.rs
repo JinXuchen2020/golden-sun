@@ -28,7 +28,9 @@ fn tilekind_encode_decode_stairs()   { assert_eq!(TileKind::from_u8(9),   TileKi
 #[test]
 fn tilekind_encode_decode_pushblock(){ assert_eq!(TileKind::from_u8(15),  TileKind::PushBlock); }
 #[test]
-fn tilekind_encode_decode_unknown()  { assert_eq!(TileKind::from_u8(255), TileKind::Unknown); }
+fn tilekind_encode_decode_unknown()  { assert_eq!(TileKind::from_u8(254), TileKind::Unknown); }
+#[test]
+fn tilekind_encode_decode_waypoint() { assert_eq!(TileKind::from_u8(255), TileKind::Waypoint); }
 
 // ── Scenario Outline: 可通行性判定 ──
 

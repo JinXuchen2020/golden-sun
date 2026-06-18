@@ -93,6 +93,17 @@ pub enum BattlePhase {
     FleeSuccess,
 }
 
+/// 伤害数字弹出效果
+#[derive(Debug, Clone)]
+pub struct DamagePopup {
+    pub damage: u32,
+    pub x: f32,
+    pub y: f32,
+    pub timer: f32,
+    pub element: Element,
+    pub modifier: f32,
+}
+
 /// 战斗实例
 #[derive(Debug, Clone)]
 pub struct Battle {
@@ -107,6 +118,12 @@ pub struct Battle {
     pub total_coins: u32,
     party_speed: u32,
     enemy_speed: u32,
+    /// 受击抖动计时器（秒），>0 时目标闪烁
+    pub hit_shake: f32,
+    /// 加速模式（按住B键时3倍速）
+    pub turbo: bool,
+    /// 伤害数字弹出列表
+    pub popups: Vec<DamagePopup>,
 }
 
 /// 从 party/enemies 中读取的当前行动者快照
@@ -144,6 +161,9 @@ impl Battle {
             results: Vec::new(),
             total_exp, total_coins,
             party_speed, enemy_speed,
+            hit_shake: 0.0,
+            turbo: false,
+            popups: Vec::new(),
         }
     }
 
@@ -171,6 +191,13 @@ impl Battle {
                     let modifier = calculator::element_modifier(actor.element, t.element);
                     let killed = dmg >= t.hp;
                     self.apply_damage(target, is_party_target, dmg);
+                    self.hit_shake = 0.15;
+                    let target_x = if is_party_target { 440.0 } else { 100.0 + target as f32 * 80.0 };
+                    let target_y = if is_party_target { 80.0 } else { 100.0 };
+                    self.popups.push(DamagePopup {
+                        damage: dmg, x: target_x, y: target_y, timer: 0.0,
+                        element: actor.element, modifier,
+                    });
                     self.results.push(AttackResult {
                         attacker: actor.id, target: t.id,
                         damage: dmg, element: actor.element, modifier, killed,
@@ -194,6 +221,13 @@ impl Battle {
                         let modifier = calculator::element_modifier(psynergy.element(), t.element);
                         let killed = dmg >= t.hp;
                         self.apply_damage(target, is_party_target, dmg);
+                        self.hit_shake = 0.15;
+                        let target_x = if is_party_target { 440.0 } else { 100.0 + target as f32 * 80.0 };
+                        let target_y = if is_party_target { 80.0 } else { 100.0 };
+                        self.popups.push(DamagePopup {
+                            damage: dmg, x: target_x, y: target_y, timer: 0.0,
+                            element: psynergy.element(), modifier,
+                        });
                         self.results.push(AttackResult {
                             attacker: actor.id, target: t.id,
                             damage: dmg, element: psynergy.element(), modifier, killed,

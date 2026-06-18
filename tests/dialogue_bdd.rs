@@ -30,8 +30,8 @@ fn branch_dialogue_selection() {
             DialoguePage {
                 lines: &[DialogueLine { text: "选 A 还是 B？", actions: &[] }],
                 choices: &[
-                    DialogueChoice { label: "选 A", target_page: 1, require_flag: None, set_flag: Some("chose_a") },
-                    DialogueChoice { label: "选 B", target_page: 2, require_flag: None, set_flag: Some("chose_b") },
+                    DialogueChoice { label: "选 A", target_page: 1, require_flag: None, require_affinity: None, set_flag: Some("chose_a") },
+                    DialogueChoice { label: "选 B", target_page: 2, require_flag: None, require_affinity: None, set_flag: Some("chose_b") },
                 ],
             },
             DialoguePage { lines: &[DialogueLine { text: "你选了 A", actions: &[] }], choices: &[] },
@@ -59,6 +59,7 @@ fn conditional_option_visibility() {
         label: "秘密通道",
         target_page: 1,
         require_flag: Some("has_key"),
+        require_affinity: None,
         set_flag: None,
     };
 

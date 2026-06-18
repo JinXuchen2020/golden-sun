@@ -1,0 +1,33 @@
+[
+  {
+    "id": 1,
+    "name": "Ivan",
+    "dialogue_id": "ivan",
+    "x": 7.0,
+    "y": 8.0,
+    "facing": "down",
+    "patrol": null
+  },
+  {
+    "id": 2,
+    "name": "Mia",
+    "dialogue_id": "mia",
+    "x": 20.0,
+    "y": 20.0,
+    "facing": "left",
+    "patrol": null
+  },
+  {
+    "id": 3,
+    "name": "Garsmin",
+    "dialogue_id": "garsmin",
+    "x": 14.0,
+    "y": 14.0,
+    "facing": "right",
+    "patrol": [
+      [14.0, 14.0],
+      [18.0, 14.0],
+      [18.0, 12.0]
+    ]
+  }
+]

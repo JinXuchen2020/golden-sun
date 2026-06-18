@@ -169,7 +169,8 @@ fn test_tilekind_from_u8() {
     assert_eq!(TileKind::from_u8(0), TileKind::Void);
     assert_eq!(TileKind::from_u8(1), TileKind::Grass);
     assert_eq!(TileKind::from_u8(15), TileKind::PushBlock);
-    assert_eq!(TileKind::from_u8(255), TileKind::Unknown);
+    assert_eq!(TileKind::from_u8(254), TileKind::Unknown);
+    assert_eq!(TileKind::from_u8(255), TileKind::Waypoint);
 }
 
 #[test]

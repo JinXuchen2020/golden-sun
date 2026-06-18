@@ -13,10 +13,19 @@ pub fn apply_psynergy(tile: TileKind, psynergy: PsynergyType) -> Option<TileKind
         PsynergyType::Whirlwind => apply_whirlwind(tile),
         PsynergyType::Growth => apply_growth(tile),
         PsynergyType::Freeze => apply_freeze(tile),
-        PsynergyType::Force => None, // Force 需要位置信息，由调用方处理
+        PsynergyType::Force => apply_force(tile),
         PsynergyType::Catch => apply_catch(tile),
         PsynergyType::Flash => None, // Flash 需要 3×3 范围信息，由调用方处理
         PsynergyType::Reveal => None, // Reveal 由调用方处理
+    }
+}
+
+/// Force 对可破坏 tile 的效果
+fn apply_force(tile: TileKind) -> Option<TileKind> {
+    if tile.is_breakable() {
+        Some(TileKind::Grass)
+    } else {
+        None
     }
 }
 

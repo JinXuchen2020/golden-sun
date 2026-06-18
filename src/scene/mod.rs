@@ -4,14 +4,13 @@
 //! - `dialogue`: 对话树引擎 (Phase 4)
 
 /// 场景标识 — 每个可加载的地图/场景对应一个 ID
-///
-/// Phase 1 值村完成后再扩展其他场景。
-/// Phase 6 标题画面复用 `Title` 变体。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum SceneId {
     Title,
     Vale,
+    WildForest,
+    Cave,
     // Phase 4+: SolSanctum, WorldMap, Kolima, ...
     // Phase 6: MenuScreen
 }

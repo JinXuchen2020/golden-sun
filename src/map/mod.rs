@@ -66,11 +66,19 @@ pub enum TileKind {
     OpenedChest,
     /// 21: 可攀爬藤蔓（Growth 结果）
     VineClimbable,
-    /// 255: 未知（fallback）
+    /// 255: 传送点（行走触碰激活，可在菜单传送）
+    Waypoint,
+    /// 254: 未知（fallback）
     Unknown,
 }
 
 impl TileKind {
+    /// 该 tile 是否可破坏
+    #[must_use]
+    pub const fn is_breakable(self) -> bool {
+        matches!(self, TileKind::Wall | TileKind::Windmill)
+    }
+
     /// 从 u8 数字解码（Phase 1 地图数据用）
     #[must_use]
     pub const fn from_u8(v: u8) -> Self {
@@ -97,6 +105,8 @@ impl TileKind {
             19 => TileKind::HiddenChest,
             20 => TileKind::OpenedChest,
             21 => TileKind::VineClimbable,
+            254 => TileKind::Unknown,
+            255 => TileKind::Waypoint,
             _ => TileKind::Unknown,
         }
     }
@@ -113,7 +123,8 @@ impl TileKind {
             | TileKind::Flower
             | TileKind::Ice
             | TileKind::VineClimbable
-            | TileKind::WindmillActive)
+            | TileKind::WindmillActive
+            | TileKind::Waypoint)
     }
 
     /// 该 tile 是否有交互动作（Phase 3 用）
@@ -155,6 +166,7 @@ impl TileKind {
             TileKind::HiddenChest => c(200, 180, 50),
             TileKind::OpenedChest => c(120, 100, 60),
             TileKind::VineClimbable => c(80, 160, 60),
+            TileKind::Waypoint => c(255, 215, 0),
             TileKind::Unknown => c(255, 0, 255),
         }
     }

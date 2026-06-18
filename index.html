@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Golden Sun - Rust Edition</title>
+    <style>
+        body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; color: #fff; font-family: monospace; }
+        canvas { image-rendering: pixelated; border: 2px solid #333; }
+        #fallback { display: none; text-align: center; padding: 20px; }
+        .loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 24px; }
+    </style>
+</head>
+<body>
+    <div id="fallback">
+        <h2>WebGL Not Supported</h2>
+        <p>Your browser does not support WebGL. Please try a modern browser like Chrome or Firefox.</p>
+    </div>
+    <canvas id="game"></canvas>
+    <script>
+        if (!window.WebGLRenderingContext || !document.createElement('canvas').getContext('webgl')) {
+            document.getElementById('fallback').style.display = 'block';
+            document.querySelector('canvas').style.display = 'none';
+        }
+    </script>
+    <script type="module">
+        const canvas = document.getElementById('game');
+        const imports = { './lib': {} };
+        const script = document.createElement('script');
+        script.src = '/golden_sun.js';
+        script.onload = () => init('/golden_sun_bg.wasm').then(({ instance }) => {
+            instance.exports.main();
+        }).catch(e => {
+            console.error('Failed to load WASM:', e);
+            document.body.innerHTML = '<h2>Loading Error</h2><p>Failed to load the game. Check browser console.</p>';
+        });
+        document.body.appendChild(script);
+    </script>
+</body>
+</html>

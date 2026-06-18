@@ -2,8 +2,46 @@
 //!
 //! 所有 Phase 共享此结构：Phase 1-2 填充位置/实体，
 //! Phase 3 填充精灵力，Phase 5 填充战斗数据，Phase 6 实现序列化。
+//! Phase 6.7: 敌人配置表
+//! Phase 6.10: QuestLog 任务日志系统
+
+pub mod quest;
+pub mod loader;
 
 use std::collections::HashMap;
+
+/// 敌人配置 — 按区域定义可用敌人
+#[derive(Debug, Clone)]
+pub struct EnemyConfig {
+    pub name: &'static str,
+    pub level: u32,
+}
+
+/// 获取指定区域的敌人编队
+pub fn enemies_for_area(area: &str) -> Vec<EnemyConfig> {
+    match area {
+        "Vale" => vec![
+            EnemyConfig { name: "Wolf", level: 3 },
+            EnemyConfig { name: "Bat", level: 2 },
+            EnemyConfig { name: "Goblin", level: 4 },
+        ],
+        "WildForest" => vec![
+            EnemyConfig { name: "Wolf", level: 4 },
+            EnemyConfig { name: "Spider", level: 3 },
+            EnemyConfig { name: "Goblin", level: 5 },
+            EnemyConfig { name: "Treant", level: 6 },
+        ],
+        "Cave" => vec![
+            EnemyConfig { name: "Bat", level: 3 },
+            EnemyConfig { name: "Golem", level: 7 },
+            EnemyConfig { name: "Spider", level: 5 },
+        ],
+        _ => vec![
+            EnemyConfig { name: "Wolf", level: 3 },
+            EnemyConfig { name: "Bat", level: 2 },
+        ],
+    }
+}
 
 /// 可保存的游戏状态 — 各 Phase 按需求扩展字段
 ///

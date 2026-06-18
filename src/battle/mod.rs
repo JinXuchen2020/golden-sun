@@ -6,5 +6,5 @@ pub mod calculator;
 pub mod state;
 
 pub use state::{
-    AttackResult, Battle, BattleAction, BattlePhase, Combatant, StatusEffect,
+    AttackResult, Battle, BattleAction, BattlePhase, Combatant, DamagePopup, StatusEffect,
 };

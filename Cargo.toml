@@ -14,10 +14,16 @@ categories = ["game", "graphics", "simulation"]
 # wasm 构建命令: cargo build --target wasm32-unknown-unknown --lib
 crate-type = ["lib"]
 
+[[bin]]
+name = "editor"
+path = "tools/editor.rs"
+required-features = []
+
 [dependencies]
 macroquad = "0.4"
 quad-rand = "0.2"
 serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 bincode = "1"
 # base64 crate 暂不引入 — wasm32 LocalStorage 用简易 hex 编码
 # Phase 6 如需更紧凑的存档编码，可取消注释：

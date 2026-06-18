@@ -7,11 +7,40 @@ use crate::engine::texture::TextureCache;
 use crate::map::TileKind;
 use macroquad::prelude::*;
 
+/// 根据游戏时间（秒）返回天空颜色
+pub fn get_day_night_colors(game_time: f32) -> (Color, Color, Color) {
+    // 600s 一个周期：0-300=白天, 300-450=黄昏, 450-600=夜晚
+    let cycle = (game_time % 600.0) / 600.0;
+
+    if cycle < 0.5 {
+        // 白天
+        (constants::SKY_COLOR_TOP, constants::SKY_COLOR_HORIZON, constants::BG_COLOR)
+    } else if cycle < 0.75 {
+        // 黄昏插值
+        let t = (cycle - 0.5) / 0.25;
+        let top = lerp_color(constants::SKY_COLOR_TOP, Color { r: 0.8, g: 0.4, b: 0.2, a: 1.0 }, t);
+        let hoz = lerp_color(constants::SKY_COLOR_HORIZON, Color { r: 0.9, g: 0.5, b: 0.3, a: 1.0 }, t);
+        (top, hoz, lerp_color(constants::BG_COLOR, Color { r: 0.3, g: 0.2, b: 0.1, a: 1.0 }, t))
+    } else {
+        // 夜晚
+        (Color { r: 0.1, g: 0.1, b: 0.3, a: 1.0 }, Color { r: 0.2, g: 0.15, b: 0.4, a: 1.0 }, Color { r: 0.15, g: 0.12, b: 0.08, a: 1.0 })
+    }
+}
+
+fn lerp_color(a: Color, b: Color, t: f32) -> Color {
+    Color {
+        r: a.r + (b.r - a.r) * t,
+        g: a.g + (b.g - a.g) * t,
+        b: a.b + (b.b - a.b) * t,
+        a: 1.0,
+    }
+}
+
 /// 渲染 Mode 7 画面到 TextureCache
 ///
-/// `get_tile`: 从 (x, y) tile 坐标获取 TileKind 的函数。默认传 `tilemap::get_tile`，
-/// Phase 3 可通过自定义 getter 注入运行时 tile 覆盖（如精灵力修改的地图）。
-pub fn render<F>(textures: &mut TextureCache, camera: &Camera, get_tile: F)
+/// `get_tile`: 从 (x, y) tile 坐标获取 TileKind 的函数。
+/// `game_time`: 游戏内时间，用于昼夜亮度系数。
+pub fn render<F>(textures: &mut TextureCache, camera: &Camera, get_tile: F, game_time: f32)
 where F: Fn(i32, i32) -> TileKind
 {
     let w = RENDER_TARGET_W as usize;
@@ -22,14 +51,33 @@ where F: Fn(i32, i32) -> TileKind
     // macroquad Image::bytes 是 Vec<u8>，RGBA 排列
     let pixels = &mut image.bytes;
 
+    let (sky_top, sky_hoz, _bg) = get_day_night_colors(game_time);
+    let cycle = (game_time % 600.0) / 600.0;
+
     // 1. 天空渐变
-    render_sky(pixels, w, h, horizon_y);
+    render_sky(pixels, w, h, horizon_y, sky_top, sky_hoz);
 
     // 2. 预计算 tile 颜色查找表
     let mut color_map = [[Color { r: 0.0, g: 0.0, b: 0.0, a: 1.0 }; MAP_WIDTH as usize]; MAP_HEIGHT as usize];
     for (y, row) in color_map.iter_mut().enumerate() {
         for (x, cell) in row.iter_mut().enumerate() {
-            *cell = get_tile(x as i32, y as i32).color();
+            let c = get_tile(x as i32, y as i32).color();
+            // 动态水面效果
+            let c = if c == Color::from_rgba(40, 100, 200, 255) {
+                let wave = (game_time * 2.0 + x as f32 * 0.3 + y as f32 * 0.2).sin() * 15.0;
+                Color::from_rgba(
+                    40,
+                    (100.0 + wave) as u8,
+                    (200.0 + wave * 0.5) as u8,
+                    255,
+                )
+            } else {
+                c
+            };
+            // 夜晚亮度减半
+            let brightness = if cycle >= 0.75 { 0.5 } else if cycle >= 0.5 { 1.0 - (cycle - 0.5) * 2.0 } else { 1.0 };
+            let b = brightness.clamp(0.3, 1.0);
+            *cell = Color { r: c.r * b, g: c.g * b, b: c.b * b, a: 1.0 };
         }
     }
 
@@ -82,9 +130,7 @@ where F: Fn(i32, i32) -> TileKind
 }
 
 /// 填充天空渐变
-fn render_sky(pixels: &mut [u8], w: usize, h: usize, horizon_y: usize) {
-    let top = constants::SKY_COLOR_TOP;
-    let hoz = constants::SKY_COLOR_HORIZON;
+fn render_sky(pixels: &mut [u8], w: usize, h: usize, horizon_y: usize, top: Color, hoz: Color) {
     let dr = hoz.r - top.r;
     let dg = hoz.g - top.g;
     let db = hoz.b - top.b;
