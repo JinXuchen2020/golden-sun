@@ -27,6 +27,7 @@ pub use engine::texture::TextureCache;
 pub use engine::replay;
 pub use engine::{Camera, FrameTime, GameState, InputState, PsynergyAnim, TransitionKind, WindowConfig};
 pub use data::SaveData;
+pub use data::djinn::{DjinnId, Class, OwnedDjinn, SetBonus};
 pub use data::quest::{QuestEntry, QuestLog};
 pub use psynergy::{Element, PsynergyType};
 pub use scene::{SceneId, SceneRegistry};

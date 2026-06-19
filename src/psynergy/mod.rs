@@ -20,6 +20,18 @@ pub enum Element {
     Jupiter,
 }
 
+impl Element {
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Element::Venus => "Venus",
+            Element::Mercury => "Mercury",
+            Element::Mars => "Mars",
+            Element::Jupiter => "Jupiter",
+        }
+    }
+}
+
 /// 7 种精灵力类型 — 每种有对应的元素和 PP 消耗
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PsynergyType {

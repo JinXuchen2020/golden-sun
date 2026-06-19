@@ -3,6 +3,7 @@
 use super::calculator;
 use crate::Element;
 use crate::PsynergyType;
+use crate::data::djinn::DjinnId;
 
 /// 元素增益/减益状态
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -60,6 +61,8 @@ pub enum BattleAction {
     Attack(usize),
     Defend,
     Psynergy(PsynergyType, usize),
+    ReleaseDjinn(DjinnId),
+    RecallDjinn(DjinnId),
     Flee,
 }
 
@@ -243,6 +246,63 @@ impl Battle {
                     self.logs.push("You fled successfully!".to_string());
                 } else {
                     self.logs.push("Failed to flee!".to_string());
+                }
+            }
+            BattleAction::ReleaseDjinn(djinn_id) => {
+                if is_party_actor {
+                    // 查找对应角色的 Djinn 并应用释放加成
+                    let djinn_data = crate::data::djinn::all_djinn_data();
+                    if let Some(djinn) = djinn_data.iter().find(|d| d.id == djinn_id) {
+                        // 在 party 中找第一个角色（Isaac=0）应用加成
+                        if let Some(party_member) = self.party.get_mut(0) {
+                            let orig_atk = party_member.attack;
+                            let orig_def = party_member.defense;
+                            let orig_hp = party_member.max_hp;
+                            let orig_pp = party_member.max_pp;
+                            let orig_speed = party_member.speed;
+                            
+                            // 应用释放倍率
+                            party_member.attack = (orig_atk as f32 * djinn.release_atk_mult as f32) as u32;
+                            party_member.defense = (orig_def as f32 * djinn.release_def_mult as f32) as u32;
+                            party_member.max_hp = (orig_hp as f32 * djinn.release_hp_mult as f32) as u32;
+                            party_member.hp = party_member.hp.min(party_member.max_hp);
+                            party_member.max_pp = (orig_pp as f32 * djinn.release_pp_mult as f32) as u32;
+                            party_member.pp = party_member.pp.min(party_member.max_pp);
+                            party_member.speed = (orig_speed as f32 * djinn.release_speed_mult as f32) as u32;
+                            
+                            self.logs.push(format!("{} releases {}! Stats boosted!",
+                                party_member.name, djinn.name()));
+                        }
+                    } else {
+                        self.logs.push(format!("Don't have {} equipped!", djinn_id.as_str()));
+                    }
+                } else {
+                    self.logs.push("Enemies can't release Djinn!".to_string());
+                }
+            }
+            BattleAction::RecallDjinn(djinn_id) => {
+                if is_party_actor {
+                    let djinn_data = crate::data::djinn::all_djinn_data();
+                    if let Some(djinn) = djinn_data.iter().find(|d| d.id == djinn_id) {
+                        if let Some(party_member) = self.party.get_mut(0) {
+                            // 恢复为基础值（level * 3 = base）
+                            let base = 10 + party_member.level * 3;
+                            party_member.attack = base;
+                            party_member.defense = base;
+                            party_member.max_hp = base * 2;
+                            party_member.hp = party_member.hp.min(party_member.max_hp);
+                            party_member.max_pp = party_member.level * 2;
+                            party_member.pp = party_member.pp.min(party_member.max_pp);
+                            party_member.speed = 5 + party_member.level * 2;
+                            
+                            self.logs.push(format!("{} recalls {}! Stats restored.",
+                                party_member.name, djinn.name()));
+                        }
+                    } else {
+                        self.logs.push(format!("Don't have {} equipped!", djinn_id.as_str()));
+                    }
+                } else {
+                    self.logs.push("Enemies can't recall Djinn!".to_string());
                 }
             }
         }

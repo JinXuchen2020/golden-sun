@@ -59,6 +59,8 @@ pub enum GameState {
     DialogueChoices { choices: &'static [DialogueChoice], script: DialogueScript },
     /// 传送菜单 — 显示已激活的传送点列表
     Travel { selection: usize },
+    /// Djinn 菜单 — 显示已收集的 Djinn 列表，允许装备/卸下
+    DjinnMenu { selection: usize, page: usize, character_select: u32 },
 }
 
 impl GameState {

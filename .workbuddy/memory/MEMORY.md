@@ -24,6 +24,18 @@
 - 当前已实现: `tilekind_bdd.rs` (38 测试), `core.rs` (6 测试)
 - 待实现骨架: `psynergy_bdd.rs` (Phase 3), `combat_bdd.rs` (Phase 5), `dialogue_bdd.rs` (Phase 4), `save_bdd.rs` (Phase 6)
 
+## Phase 7 扩展范围（2026-06-19 制定）
+- **7.1 主线剧情**：NPC 对话丰富（Ivan/Mia/Garsmin 各扩至 4-7 页，新增 Garet 3 页）、10 任务主线链、故事驱动逻辑
+- **7.2 新场景**：Sol Sanctum 16×16 室内迷宫、MythrilGolem Boss、场景出口/互连映射
+- **7.3 装备系统**：11 件装备（武/防/饰三槽）、商店 UI、Ivan 对话触发
+- **7.4 Boss 机制**：特殊行动 AI、阶段切换（50% 血怒气）、双倍奖励
+- **7.5 召唤系统**：9 个召唤（4 元素各 2-3 个）、Djinn Standby 消耗机制
+- **7.6 升级特效**：LevelUp 状态机动画、战斗统计与评级面板
+- **7.7 NPC 丰富**：好感度增长、重复对话问候、世界氛围闲聊
+- **7.8 测试验证**：对话/场景/装备/召唤/Boss 单元测试
+
+Agent 提示词位置: `prompts/07_story_content_master.md`
+
 ## 构建
 - 桌面: `cargo build --release && cargo run`
 - 网页: `cargo build --target wasm32-unknown-unknown --release --lib` → `golden_sun_lib.wasm`

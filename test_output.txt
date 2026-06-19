@@ -1,0 +1,150 @@
+﻿cargo :    Compiling golden-sun v0.1.0 (F:\AI_Projects\golden-sun)
+所在位置 行:1 字符: 1
++ cargo test --lib 2>&1 | Out-File -FilePath F:\AI_Projects\golden-sun\ ...
++ ~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (   Compiling go...cts\golden-sun):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 17.73s
+     Running unittests src\lib.rs (target\debug\deps\golden_sun-332461fef8b969e7.exe)
+
+running 121 tests
+test battle::calculator::tests::defense_reduces_damage ... ok
+test battle::calculator::tests::element_advantage_venus_over_jupiter ... ok
+test battle::calculator::tests::element_cycle_complete ... ok
+test battle::calculator::tests::element_disadvantage_venus_vs_mercury ... ok
+test battle::calculator::tests::element_neutral ... ok
+test battle::calculator::tests::physical_damage_advantage_higher ... ok
+test battle::calculator::tests::physical_damage_min_one ... ok
+test battle::calculator::tests::psynergy_damage_scales_with_level ... ok
+test battle::calculator::tests::psynergy_damage_variety ... ok
+test battle::state::tests::all_enemies_defeated_detection ... ok
+test battle::state::tests::all_party_defeated_detection ... ok
+test battle::state::tests::attack_reduces_enemy_hp ... ok
+test battle::state::tests::battle_init_phase ... ok
+test battle::state::tests::combatant_death ... ok
+test battle::state::tests::combatant_take_damage ... ok
+test battle::state::tests::defend_does_no_damage ... ok
+test battle::state::tests::enemy_ai_returns_attack ... ok
+test battle::state::tests::speed_order_has_all_combatants ... ok
+test battle::state::tests::total_exp_and_coins ... ok
+test battle::state::tests::victory_phase_on_all_enemies_down ... ok
+test data::djinn::tests::adept_unlocks_four_psynergies ... ok
+test data::djinn::tests::all_djinn_have_correct_elements ... ok
+test data::djinn::tests::calculate_set_bonus_empty ... ok
+test data::djinn::tests::calculate_total_bonuses_empty ... ok
+test data::djinn::tests::calculate_total_bonuses_with_equipped ... ok
+test data::djinn::tests::class_from_elements_adept_when_empty ... ok
+test data::djinn::tests::class_from_elements_all_elements ... ok
+test data::djinn::tests::class_from_elements_single_element_is_adept ... ok
+test data::djinn::tests::class_from_elements_three_elements ... ok
+test data::djinn::tests::class_from_elements_two_elements ... FAILED
+test data::djinn::tests::djinn_id_order_is_consistent ... ok
+test data::djinn::tests::djinn_id_to_str_roundtrip ... ok
+test data::djinn::tests::djinn_ids_are_unique ... ok
+test data::djinn::tests::is_djinn_collected_works ... ok
+test data::djinn::tests::release_multipliers_exist ... ok
+test data::djinn::tests::set_bonus_element_mapping ... ok
+test data::djinn::tests::set_bonus_name_nonempty ... ok
+test data::djinn::tests::transmoggrifier_unlocks_all_psynergies ... ok
+test data::djinn::tests::world_djinn_returns_three_locations ... ok
+test data::loader::tests::export_map_produces_valid_json ... ok
+test data::loader::tests::load_map_returns_none_for_missing ... ok
+test data::quest::tests::default_quests_provides_four_entries ... ok
+test data::quest::tests::quest_log_all_completed_returns_none ... ok
+test data::quest::tests::quest_log_add_and_active ... ok
+test data::quest::tests::quest_log_complete_marks_done ... ok
+test data::quest::tests::quest_log_complete_nonexistent_is_noop ... ok
+test data::quest::tests::quest_log_duplicate_skipped ... ok
+test data::quest::tests::quest_log_empty_by_default ... ok
+test dialogue::script::tests::garsmin_script_exists ... ok
+test dialogue::script::tests::ivan_first_line_has_flag_action ... ok
+test dialogue::script::tests::ivan_script_exists ... ok
+test dialogue::script::tests::ivan_start_flag_is_set ... ok
+test dialogue::script::tests::mia_script_exists ... ok
+test dialogue::script::tests::unknown_script_returns_none ... ok
+test dialogue::tests::advance_completes_eventually ... ok
+test dialogue::tests::advance_reveals_chars ... ok
+test dialogue::tests::dialogue_action_is_copy ... ok
+test dialogue::tests::dialogue_new_starts_empty ... ok
+test dialogue::tests::reset_reuses_struct ... ok
+test dialogue::tests::skip_shows_all ... ok
+test dialogue::tests::set_flag_action_affects_story_flags ... ok
+test dialogue::tests::story_flags_clear ... ok
+test dialogue::tests::story_flags_count ... ok
+test dialogue::tests::story_flags_default_false ... ok
+test dialogue::tests::story_flags_set_get ... ok
+test dialogue::tests::visible_text_returns_substring ... ok
+test dialogue::tests::zero_copy_visible_text ... ok
+test engine::game_state::tests::psynergy_anim_finished ... ok
+test engine::game_state::tests::psynergy_anim_progress ... ok
+test engine::game_state::tests::psynergy_anim_state_blocks_input ... ok
+test engine::game_state::tests::title_is_not_transition ... ok
+test engine::game_state::tests::transition_kinds_are_distinct ... ok
+test engine::game_state::tests::transition_variant_is_transition ... ok
+test engine::game_state::tests::world_map_is_not_transition ... ok
+test engine::replay::tests::playback_before_recording_returns_none ... ok
+test engine::replay::tests::replay_manager_plays_back ... ok
+test engine::replay::tests::replay_manager_records_frames ... ok
+test engine::replay::tests::ring_buffer_wraps ... ok
+test engine::resources::tests::clear_removes_all ... ok
+test engine::resources::tests::new_manager_is_empty ... ok
+test engine::resources::tests::store_and_get_audio ... ok
+test engine::resources::tests::store_and_get_texture ... ok
+test engine::resources::tests::unload_texture_removes_it ... ok
+test engine::storage::tests::fs_storage_file_path_is_safe ... ok
+test engine::storage::tests::fs_storage_sanitizes_special_chars ... ok
+test engine::storage::tests::fs_storage_exists_nonexistent ... ok
+test engine::window_config::tests::default_fullscreen_is_false ... ok
+test engine::window_config::tests::default_height_matches_constant ... ok
+test engine::window_config::tests::default_width_matches_constant ... ok
+test entity::sprite::tests::frame_size_is_correct ... ok
+test entity::sprite::tests::npc_animation_has_different_colors ... ok
+test entity::sprite::tests::player_has_12_frames ... ok
+test entity::sprite::tests::player_robin_has_visible_pixels ... ok
+test entity::tests::npc_has_dialogue ... ok
+test entity::tests::patrol_npc_has_waypoints ... ok
+test entity::tests::per_scene_npc_creation ... ok
+test entity::tests::player_created_with_id_zero ... ok
+test entity::tests::vale_has_three_npcs ... ok
+test map::tilemap::tests::bridge_is_walkable ... ok
+test map::tilemap::tests::cave_center_is_walkable ... ok
+test map::tilemap::tests::cave_edges_are_walls ... ok
+test map::tilemap::tests::cave_map_size ... ok
+test map::tilemap::tests::forest_is_not_walkable ... ok
+test map::tilemap::tests::map_bounds_void ... ok
+test map::tilemap::tests::player_start_is_walkable ... ok
+test map::tilemap::tests::road_is_walkable ... ok
+test map::tilemap::tests::wild_forest_encounter_rate ... ok
+test psynergy::effects::tests::catch_noop_on_grass ... ok
+test psynergy::effects::tests::catch_opens_chest ... ok
+test psynergy::effects::tests::dispatch_all_psynergies ... ok
+test psynergy::effects::tests::freeze_noop_on_grass ... ok
+test psynergy::effects::tests::freeze_water_to_ice ... ok
+test psynergy::effects::tests::growth_grows_seed ... ok
+test psynergy::effects::tests::growth_noop_on_grass ... ok
+test psynergy::effects::tests::whirlwind_activates_windmill ... ok
+test psynergy::effects::tests::whirlwind_clears_vine ... ok
+test psynergy::effects::tests::whirlwind_noop_on_grass ... ok
+test scene::tests::commit_switch_applies_pending ... ok
+test scene::tests::commit_switch_without_pending_is_noop ... ok
+test scene::tests::new_registry_has_initial_scene ... ok
+test scene::tests::request_switch_sets_pending ... ok
+
+failures:
+
+---- data::djinn::tests::class_from_elements_two_elements stdout ----
+
+thread 'data::djinn::tests::class_from_elements_two_elements' panicked at src\data\djinn.rs:553:9:
+assertion `left == right` failed
+  left: Adept
+ right: Dawnmist
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    data::djinn::tests::class_from_elements_two_elements
+
+test result: FAILED. 120 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+error: test failed, to rerun pass `--lib`

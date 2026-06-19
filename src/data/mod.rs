@@ -4,7 +4,9 @@
 //! Phase 3 填充精灵力，Phase 5 填充战斗数据，Phase 6 实现序列化。
 //! Phase 6.7: 敌人配置表
 //! Phase 6.10: QuestLog 任务日志系统
+//! Phase 6.9: Djinn 精灵系统
 
+pub mod djinn;
 pub mod quest;
 pub mod loader;
 
@@ -67,6 +69,16 @@ pub struct SaveData {
     pub player_hp: u32,
     /// 玩家 PP
     pub player_pp: u32,
+    /// 玩家等级
+    pub player_level: u32,
+    /// 玩家攻击力
+    pub player_attack: u32,
+    /// 玩家防御力
+    pub player_defense: u32,
+    /// 已收集的 Djinn ID 列表
+    pub collected_djinn: Vec<String>,
+    /// 已装备的 Djinn (djinn_id, slot_index)
+    pub equipped_djinn: Vec<(String, u32)>,
     /// 存档时间戳
     pub timestamp: u64,
 }
@@ -91,6 +103,11 @@ impl SaveData {
             gold: 0,
             player_hp: 100,
             player_pp: 30,
+            player_level: 1,
+            player_attack: 10,
+            player_defense: 8,
+            collected_djinn: Vec::new(),
+            equipped_djinn: Vec::new(),
             timestamp: 0,
         }
     }

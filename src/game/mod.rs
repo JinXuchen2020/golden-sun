@@ -13,6 +13,7 @@ use golden_sun::dialogue::{DialogueState, StoryFlags};
 use golden_sun::entity::sprite::{self, AnimState};
 use golden_sun::map::TileKind;
 use golden_sun::data::quest::QuestLog;
+use golden_sun::data::djinn::{self, DjinnId, OwnedDjinn, SetBonus, Class};
 use macroquad::prelude::*;
 
 /// 道具类型
@@ -228,6 +229,17 @@ pub struct GameCtx {
     dialogue_choice_selection: usize,
     /// 当前对话脚本（用于分支选择）
     current_dialogue_script: Option<golden_sun::dialogue::script::DialogueScript>,
+    // ── Phase 6.9: Djinn 精灵系统 ──
+    /// 已收集的 Djinn
+    collected_djinn: Vec<OwnedDjinn>,
+    /// 当前职业
+    current_class: Class,
+    /// Djinn 菜单页面 (0=main, 1=equip, 2=release)
+    djinn_menu_page: usize,
+    /// Djinn 菜单选中索引
+    djinn_menu_selection: usize,
+    /// 角色选择 (0=Isaac, 1=Garet)
+    djinn_character_select: usize,
 }
 
 impl GameCtx {
@@ -305,6 +317,12 @@ impl GameCtx {
             affinity: HashMap::new(),
             dialogue_choice_selection: 0,
             current_dialogue_script: None,
+            // ── Phase 6.9: Djinn 初始化 ──
+            collected_djinn: Vec::new(),
+            current_class: Class::Adept,
+            djinn_menu_page: 0,
+            djinn_menu_selection: 0,
+            djinn_character_select: 0,
         }
     }
 
@@ -352,6 +370,11 @@ impl GameCtx {
         use golden_sun::SaveData;
         let psynergies: Vec<String> = self.unlocked_psynergies[..self.unlocked_count]
             .iter().map(|p| format!("{p:?}")).collect();
+        let collected: Vec<String> = self.collected_djinn.iter().map(|d| d.djinn.id.as_str().to_string()).collect();
+        let equipped: Vec<(String, u32)> = self.collected_djinn.iter()
+            .filter(|d| d.equipped)
+            .map(|d| (d.djinn.id.as_str().to_string(), d.equipped_to.unwrap_or(0)))
+            .collect();
         let data = SaveData {
             scene: match self.scene.current() {
                 golden_sun::SceneId::Vale => "Vale",
@@ -366,8 +389,13 @@ impl GameCtx {
             inventory: Vec::new(),
             psynergies,
             gold: 0,
-            player_hp: 100,
+            player_hp: self.player_stats.hp,
             player_pp: self.pp,
+            player_level: self.player_stats.level,
+            player_attack: self.player_stats.attack,
+            player_defense: self.player_stats.defense,
+            collected_djinn: collected,
+            equipped_djinn: equipped,
             timestamp: std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .map(|d| d.as_secs())
@@ -391,9 +419,31 @@ impl GameCtx {
                         self.camera = Camera::new(data.player_x, data.player_y);
                         self.camera.rotation = data.player_rotation;
                         self.pp = data.player_pp;
+                        
+                        // 恢复 Djinn 收集状态
+                        let all_djinn_data = djinn::all_djinn_data();
+                        for saved_id in &data.collected_djinn {
+                            if let Some(template) = all_djinn_data.iter().find(|d| d.id.as_str() == saved_id.as_str()) {
+                                let owned = OwnedDjinn::new(template.clone());
+                                self.collected_djinn.push(owned);
+                            }
+                        }
+                        
+                        // 恢复装备状态
+                        for (saved_id, slot) in &data.equipped_djinn {
+                            if let Some(od) = self.collected_djinn.iter_mut().find(|d| d.djinn.id.as_str() == saved_id.as_str()) {
+                                od.equipped = true;
+                                od.equipped_to = Some(*slot);
+                            }
+                        }
+                        
+                        if !self.collected_djinn.is_empty() {
+                            self.apply_djinn_bonuses();
+                        }
+                        
                         self.state = GameState::WorldMap;
                         #[cfg(debug_assertions)]
-                        eprintln!("游戏已读档 ({:.1}, {:.1})", data.player_x, data.player_y);
+                        eprintln!("游戏已读档 ({:.1}, {:.1}), Djinn: {}", data.player_x, data.player_y, self.collected_djinn.len());
                         true
                     }
                     Err(_) => false,
@@ -490,5 +540,225 @@ impl GameCtx {
     pub fn step(&mut self) {
         self.update();
         self.draw();
+    }
+
+    // ── Phase 6.9: Djinn 方法 ──
+
+    /// 获取已装备的 Djinn 列表（用于计算属性加成）
+    #[allow(dead_code)]
+    fn equipped_djinn_list(&self) -> Vec<&OwnedDjinn> {
+        self.collected_djinn.iter().filter(|d| d.equipped).collect()
+    }
+
+    /// 获取角色装备的 Djinn
+    fn character_djinn(&self, char_idx: u32) -> Vec<&OwnedDjinn> {
+        self.collected_djinn.iter()
+            .filter(|d| d.equipped_to == Some(char_idx))
+            .collect()
+    }
+
+    /// 应用 Djinn 装备属性加成到玩家
+    fn apply_djinn_bonuses(&mut self) {
+        let mut atk_bonus = 0u32;
+        let mut def_bonus = 0u32;
+        let mut hp_bonus = 0u32;
+        let mut pp_bonus = 0u32;
+
+        for od in &self.collected_djinn {
+            if od.equipped {
+                atk_bonus += od.djinn.atk_bonus;
+                def_bonus += od.djinn.def_bonus;
+                hp_bonus += od.djinn.hp_bonus;
+                pp_bonus += od.djinn.pp_bonus;
+            }
+        }
+
+        // 计算套装加成
+        let equipped: Vec<&OwnedDjinn> = self.collected_djinn.iter().filter(|d| d.equipped).collect();
+        let bonuses = djinn::calculate_set_bonus(&equipped);
+        for bonus in &bonuses {
+            match bonus {
+                SetBonus::LifeRing => { hp_bonus = (hp_bonus as f32 * 0.2) as u32; }
+                SetBonus::ManaRing => { pp_bonus = (pp_bonus as f32 * 0.2) as u32; }
+                SetBonus::PowerRing => { atk_bonus = (atk_bonus as f32 * 0.2) as u32; }
+                SetBonus::GuardRing => { def_bonus = (def_bonus as f32 * 0.2) as u32; }
+                SetBonus::SwiftRing => { /* speed handled separately */ }
+                SetBonus::SageRing => {
+                    atk_bonus = (atk_bonus as f32 * 0.15) as u32;
+                    def_bonus = (def_bonus as f32 * 0.15) as u32;
+                    hp_bonus = (hp_bonus as f32 * 0.15) as u32;
+                    pp_bonus = (pp_bonus as f32 * 0.15) as u32;
+                }
+                SetBonus::None => {}
+            }
+        }
+
+        self.player_stats.attack += atk_bonus;
+        self.player_stats.defense += def_bonus;
+        self.player_stats.max_hp += hp_bonus;
+        self.player_stats.hp = self.player_stats.hp.saturating_add(hp_bonus).min(self.player_stats.max_hp);
+        self.max_pp += pp_bonus;
+        self.pp = self.pp.min(self.max_pp);
+
+        // 根据职业更新可用精灵力
+        self.update_class_psynergies();
+    }
+
+    /// 根据当前职业更新可用精灵力
+    fn update_class_psynergies(&mut self) {
+        let elements: Vec<golden_sun::Element> = self.character_djinn(0)
+            .iter().map(|d| d.djinn.element()).collect();
+        let elements2: Vec<golden_sun::Element> = self.character_djinn(1)
+            .iter().map(|d| d.djinn.element()).collect();
+        let mut all_elements = elements;
+        all_elements.extend(elements2);
+        all_elements.sort_by_key(|e| *e as u8);
+        all_elements.dedup();
+
+        let new_class = Class::from_elements(&all_elements);
+        
+        if new_class != self.current_class {
+            #[cfg(debug_assertions)]
+            eprintln!("职业变化: {} → {}", self.current_class.name(), new_class.name());
+            self.current_class = new_class;
+            
+            // 更新精灵力解锁
+            let unlocked = new_class.unlocked_psynergies();
+            self.unlocked_count = unlocked.len().min(PsynergyType::ALL.len());
+            for (i, psy) in unlocked.iter().enumerate() {
+                if i < PsynergyType::ALL.len() {
+                    self.unlocked_psynergies[i] = *psy;
+                }
+            }
+        }
+    }
+
+    /// 收集 Djinn（在地图上找到时调用）
+    pub fn collect_djinn(&mut self, djinn_id: DjinnId) -> bool {
+        let data = djinn::all_djinn_data();
+        if let Some(djinn_template) = data.iter().find(|d| d.id == djinn_id) {
+            // 检查是否已拥有
+            if self.collected_djinn.iter().any(|d| d.djinn.id == djinn_id) {
+                return false;
+            }
+            let owned = OwnedDjinn::new(djinn_template.clone());
+            self.collected_djinn.push(owned);
+            
+            // 自动装备到第一个有空位的角色
+            self.auto_equip_djinn(djinn_id);
+            
+            // 应用属性加成
+            self.apply_djinn_bonuses();
+            
+            // 标记任务
+            self.quest_log.complete("first_djinn");
+            
+            #[cfg(debug_assertions)]
+            eprintln!("收集到 Djinn: {}", djinn_id.as_str());
+            true
+        } else {
+            false
+        }
+    }
+
+    /// 自动装备 Djinn 到第一个有空位的角色
+    fn auto_equip_djinn(&mut self, djinn_id: DjinnId) {
+        // 查找哪个角色槽位 Djinn 较少
+        let count_0 = self.collected_djinn.iter().filter(|d| d.equipped_to == Some(0)).count();
+        let count_1 = self.collected_djinn.iter().filter(|d| d.equipped_to == Some(1)).count();
+        let target = if count_0 <= count_1 { 0u32 } else { 1 };
+        
+        if let Some(od) = self.collected_djinn.iter_mut().find(|d| d.djinn.id == djinn_id) {
+            od.equipped = true;
+            od.equipped_to = Some(target);
+        }
+    }
+
+    /// 切换 Djinn 装备状态
+    fn toggle_djinn_equip(&mut self, idx: usize) -> bool {
+        if idx >= self.collected_djinn.len() {
+            return false;
+        }
+        let is_equipped = self.collected_djinn[idx].equipped;
+        let char_idx = self.djinn_character_select;
+        
+        // 先检查当前角色已装备的 Djinn 数量
+        let current_count = self.collected_djinn.iter()
+            .filter(|d| d.equipped_to == Some(char_idx as u32))
+            .count();
+        
+        if is_equipped {
+            // 卸下
+            self.collected_djinn[idx].equipped = false;
+            self.collected_djinn[idx].equipped_to = None;
+        } else {
+            // 装备 — 限制每个角色最多装备 4 个 Djinn
+            if current_count >= 4 {
+                return false;
+            }
+            self.collected_djinn[idx].equipped = true;
+            self.collected_djinn[idx].equipped_to = Some(char_idx as u32);
+        }
+        
+        self.apply_djinn_bonuses();
+        true
+    }
+
+    /// 在战斗中释放 Djinn
+    #[allow(dead_code)]
+    pub fn release_djinn_in_battle(&mut self, djinn_id: DjinnId) -> bool {
+        if let Some(od) = self.collected_djinn.iter_mut().find(|d| d.djinn.id == djinn_id) {
+            if od.equipped && !od.released {
+                od.released = true;
+                #[cfg(debug_assertions)]
+                eprintln!("释放 Djinn: {} — 战斗后恢复", djinn_id.as_str());
+                true
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
+    /// 在战斗结束后召回所有已释放的 Djinn
+    pub fn recall_all_djinn(&mut self) {
+        let mut changed = false;
+        for od in &mut self.collected_djinn {
+            if od.released {
+                od.released = false;
+                changed = true;
+            }
+        }
+        if changed {
+            self.apply_djinn_bonuses();
+            #[cfg(debug_assertions)]
+            eprintln!("所有 Djinn 已召回");
+        }
+    }
+
+    /// 检查玩家是否站在 Djinn 位置上
+    fn check_djinn_pickup(&mut self) {
+        let px = self.camera.x.floor();
+        let py = self.camera.y.floor();
+        
+        for (djinn_id, scene_name, tx, ty) in djinn::world_djinn() {
+            if scene_name == match self.scene.current() {
+                golden_sun::SceneId::Vale => "Vale",
+                golden_sun::SceneId::WildForest => "WildForest",
+                golden_sun::SceneId::Cave => "Cave",
+                _ => "Vale",
+            } {
+                let dist_sq = (px - tx).powi(2) + (py - ty).powi(2);
+                if dist_sq < 2.0 {
+                    // 附近有 Djinn，按 A 收集
+                    if self.input_bus.consume(golden_sun::InputEvent::Confirm)
+                        && !self.collected_djinn.iter().any(|d| d.djinn.id == djinn_id)
+                    {
+                        self.collect_djinn(djinn_id);
+                    }
+                }
+            }
+        }
     }
 }

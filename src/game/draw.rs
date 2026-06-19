@@ -56,6 +56,12 @@ impl GameCtx {
                 #[cfg(debug_assertions)]
                 self.draw_debug();
             }
+            GameState::DjinnMenu { selection, page, character_select } => {
+                self.draw_world_map();
+                self.draw_djinn_menu(selection, page, character_select);
+                #[cfg(debug_assertions)]
+                self.draw_debug();
+            }
             GameState::Transition { kind, timer, .. } => {
                 self.draw_world_map();
                 golden_sun::ui::draw_transition(timer, kind);
@@ -425,6 +431,50 @@ impl GameCtx {
             }
             draw_text("Confirm to travel / Cancel to close", 100.0, 360.0, 12.0, GRAY);
         }
+    }
+
+    /// 绘制 Djinn 菜单
+    fn draw_djinn_menu(&self, selection: usize, _page: usize, character_select: u32) {
+        draw_rectangle(100.0, 80.0, 440.0, 320.0, Color::from_rgba(0, 0, 0, 200));
+        draw_rectangle(100.0, 80.0, 440.0, 320.0, Color::from_rgba(60, 60, 60, 100));
+        draw_rectangle_lines(100.0, 80.0, 440.0, 320.0, 2.0, WHITE);
+
+        let char_name = if character_select == 0 { "Isaac" } else { "Garet" };
+        draw_text(format!("== Djinn ({char_name}) ==",), 150.0, 100.0, 20.0, YELLOW);
+
+        let djinn_count = self.collected_djinn.len();
+        if djinn_count == 0 {
+            draw_text("No Djinn collected yet", 150.0, 140.0, 16.0, GRAY);
+        } else {
+            for (i, od) in self.collected_djinn.iter().enumerate() {
+                let y = 130.0 + i as f32 * 28.0;
+                let is_selected = i == selection;
+                let equipped = od.equipped;
+                
+                let prefix = if is_selected { "\u{25B8} " } else { "  " };
+                let name_color = if equipped { GREEN } else { WHITE };
+                let status = if equipped { " [EQUIPPED]" } else { "" };
+                
+                let element_color = match od.djinn.element() {
+                    golden_sun::Element::Venus => Color::from_rgba(100, 200, 100, 255),
+                    golden_sun::Element::Mercury => Color::from_rgba(100, 150, 255, 255),
+                    golden_sun::Element::Mars => Color::from_rgba(255, 100, 100, 255),
+                    golden_sun::Element::Jupiter => Color::from_rgba(200, 200, 100, 255),
+                };
+                
+                draw_text(prefix, 150.0, y, 16.0, if is_selected { YELLOW } else { LIGHTGRAY });
+                draw_text(format!("{}{}", od.djinn.name(), status), 170.0, y, 16.0, name_color);
+                draw_text(format!("[{}]", od.djinn.element().as_str()), 350.0, y, 12.0, element_color);
+            }
+        }
+
+        // 角色选择指示
+        let sel_color = if character_select == 0 { GREEN } else { LIGHTGRAY };
+        draw_text("[Isaac]", 150.0, 340.0, 14.0, sel_color);
+        let sel_color2 = if character_select == 1 { GREEN } else { LIGHTGRAY };
+        draw_text("[Garet]", 250.0, 340.0, 14.0, sel_color2);
+        
+        draw_text("Confirm: Toggle Equip / Cancel: Close", 100.0, 365.0, 12.0, GRAY);
     }
 
     /// 绘制精灵力施法特效（从 PsynergyAnim 数据）

@@ -71,6 +71,7 @@ pub fn default_quests() -> Vec<QuestEntry> {
         QuestEntry::new("intro_talk", "初遇村民", "与 Vale 村的村民交谈，了解情况"),
         QuestEntry::new("first_psynergy", "初次精灵力", "学会并使用第一种精灵力"),
         QuestEntry::new("explore_forest", "探索密林", "离开 Vale 村，探索野外森林"),
+        QuestEntry::new("first_djinn", "初遇 Djinn", "在地图上找到并收集第一个 Djinn 精灵"),
     ]
 }
 
@@ -130,8 +131,8 @@ mod tests {
     }
 
     #[test]
-    fn default_quests_provides_three_entries() {
+    fn default_quests_provides_four_entries() {
         let quests = default_quests();
-        assert_eq!(quests.len(), 3);
+        assert_eq!(quests.len(), 4);
     }
 }

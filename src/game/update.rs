@@ -106,6 +106,7 @@ impl GameCtx {
                 self.trigger_random_encounter(moving);
                 self.check_scene_boundaries();
                 self.check_waypoints();
+                self.check_djinn_pickup();
                 self.game_time += self.time.delta;
                 self.particles.spawn(self.time.delta, golden_sun::engine::particle::ParticleKind::Rain);
                 self.particles.update(self.time.delta);
@@ -280,9 +281,41 @@ impl GameCtx {
                     }
                 }
             }
+            GameState::DjinnMenu { ref mut selection, ref mut page, ref mut character_select } => {
+                if *page == 0 {
+                    // Djinn 主列表
+                    let djinn_count = self.collected_djinn.len();
+                    if self.input_bus.consume(InputEvent::Up) {
+                        *selection = selection.saturating_sub(1);
+                    }
+                    if self.input_bus.consume(InputEvent::Down) {
+                        *selection = (*selection).min(djinn_count - 1);
+                    }
+                    // 切换角色选择
+                    if self.input_bus.consume(InputEvent::Left) || self.input_bus.consume(InputEvent::Right) {
+                        *character_select = if *character_select == 0 { 1 } else { 0 };
+                    }
+                    // 确认 → 切换装备
+                    if self.input_bus.consume(InputEvent::Confirm) {
+                        let idx = *selection;
+                        if self.toggle_djinn_equip(idx) {
+                            self.play_sfx("confirm");
+                        } else {
+                            self.play_sfx("cancel");
+                        }
+                    }
+                    // Cancel 返回主菜单
+                    if self.input_bus.consume(InputEvent::Cancel) {
+                        self.play_sfx("cancel");
+                        self.state = GameState::Menu;
+                        self.menu_selection = 5;
+                        self.menu_page = 0;
+                    }
+                }
+            }
             GameState::Menu => {
-                const MENU_ITEMS: [&str; 7] = ["Continue", "Items", "Psynergy", "Status", "Save", "Travel", "Quit"];
                 if self.menu_page == 0 {
+                    const MENU_ITEMS: [&str; 8] = ["Continue", "Items", "Psynergy", "Status", "Save", "Djinn", "Travel", "Quit"];
                     // 主菜单导航
                     if self.input_bus.consume(InputEvent::Up) {
                         self.menu_selection = self.menu_selection.saturating_sub(1);
@@ -305,6 +338,19 @@ impl GameCtx {
                             }
                             5 => {
                                 self.play_sfx("confirm");
+                                // 有 Djinn 才显示 Djinn 菜单
+                                if !self.collected_djinn.is_empty() {
+                                    self.state = GameState::DjinnMenu {
+                                        selection: 0, page: 0, character_select: 0,
+                                    };
+                                    self.djinn_menu_selection = 0;
+                                    self.djinn_menu_page = 0;
+                                    self.djinn_character_select = 0;
+                                }
+                                self.menu_selection = 0;
+                            }
+                            6 => {
+                                self.play_sfx("confirm");
                                 // 有传送点才显示 Travel 菜单
                                 if !self.activated_waypoints.is_empty() {
                                     self.state = GameState::Travel { selection: 0 };
@@ -312,7 +358,7 @@ impl GameCtx {
                                 }
                                 self.menu_selection = 0;
                             }
-                            6 => {
+                            7 => {
                                 self.play_sfx("confirm");
                                 self.camera = Camera::new(super::PLAYER_START_X, super::PLAYER_START_Y);
                                 self.pp = constants::PP_INITIAL;
@@ -392,6 +438,8 @@ impl GameCtx {
                             let exp = battle.total_exp;
                             self.add_gold(coins);
                             self.add_exp(exp);
+                            // 战斗胜利后召回所有 Djinn
+                            self.recall_all_djinn();
                             if self.input_bus.consume(InputEvent::Confirm) {
                                 self.battle = None;
                                 self.state = GameState::WorldMap;
