@@ -1,0 +1,210 @@
+﻿cargo : warning: variables can be used directly in the `format!` string
+所在位置 行:1 字符: 1
++ cargo clippy --all-targets 2>&1 | Out-File -FilePath F:\AI_Projects\g ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (warning: variab...format!` string:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+   --> src\battle\calculator.rs:108:13
+    |
+108 |             assert!(dmg >= 1, "psynergy {:?} deals 0 damage", psynergy);
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#uninlined_format_ar
+gs
+    = note: `#[warn(clippy::uninlined_format_args)]` on by default
+help: change this to
+    |
+108 -             assert!(dmg >= 1, "psynergy {:?} deals 0 damage", psynergy);
+108 +             assert!(dmg >= 1, "psynergy {psynergy:?} deals 0 damage");
+    |
+
+warning: items after a test module
+  --> src\engine\window_config.rs:14:1
+   |
+14 | mod tests {
+   | ^^^^^^^^^
+...
+36 | impl Default for WindowConfig {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#items_after_test_mod
+ule
+   = note: `#[warn(clippy::items_after_test_module)]` on by default
+
+warning: usage of a legacy numeric constant
+  --> src\engine\window_config.rs:20:63
+   |
+20 |         assert!((cfg.width - constants::WINDOW_WIDTH).abs() < std::f32::EPSILON);
+   |                                                               ^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#legacy_numeric_const
+ants
+   = note: `#[warn(clippy::legacy_numeric_constants)]` on by default
+help: use the associated constant instead
+   |
+20 -         assert!((cfg.width - constants::WINDOW_WIDTH).abs() < std::f32::EPSILON);
+20 +         assert!((cfg.width - constants::WINDOW_WIDTH).abs() < f32::EPSILON);
+   |
+
+warning: usage of a legacy numeric constant
+  --> src\engine\window_config.rs:26:65
+   |
+26 |         assert!((cfg.height - constants::WINDOW_HEIGHT).abs() < std::f32::EPSILON);
+   |                                                                 ^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#legacy_numeric_const
+ants
+help: use the associated constant instead
+   |
+26 -         assert!((cfg.height - constants::WINDOW_HEIGHT).abs() < std::f32::EPSILON);
+26 +         assert!((cfg.height - constants::WINDOW_HEIGHT).abs() < f32::EPSILON);
+   |
+
+warning: used `assert_eq!` with a literal bool
+   --> src\engine\replay.rs:214:9
+    |
+214 |         assert_eq!(mgr.current_frame().unwrap().a, true);
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#bool_assert_compari
+son
+    = note: `#[warn(clippy::bool_assert_comparison)]` on by default
+help: replace it with `assert!(..)`
+    |
+214 -         assert_eq!(mgr.current_frame().unwrap().a, true);
+214 +         assert!(mgr.current_frame().unwrap().a);
+    |
+
+warning: `golden-sun` (lib test) generated 5 warnings (run `cargo clippy --fix --lib -p golden-sun --tests` to apply 2 
+suggestions)
+    Checking golden-sun v0.1.0 (F:\AI_Projects\golden-sun)
+warning: variables can be used directly in the `format!` string
+   --> tests\core.rs:183:9
+    |
+183 |         assert!(c.r > 0.0 || c.g > 0.0 || c.b > 0.0, "{:?} color is black", kind);
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#uninlined_format_ar
+gs
+    = note: `#[warn(clippy::uninlined_format_args)]` on by default
+help: change this to
+    |
+183 -         assert!(c.r > 0.0 || c.g > 0.0 || c.b > 0.0, "{:?} color is black", kind);
+183 +         assert!(c.r > 0.0 || c.g > 0.0 || c.b > 0.0, "{kind:?} color is black");
+    |
+
+warning: `golden-sun` (test "core") generated 1 warning (run `cargo clippy --fix --test "core"` to apply 1 suggestion)
+warning: variables can be used directly in the `format!` string
+   --> tests\tilekind_bdd.rs:103:9
+    |
+103 |         assert_ne!(a.color(), b.color(), "Tile {:?} and {:?} have the same color!", a, b);
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#uninlined_format_ar
+gs
+    = note: `#[warn(clippy::uninlined_format_args)]` on by default
+help: change this to
+    |
+103 -         assert_ne!(a.color(), b.color(), "Tile {:?} and {:?} have the same color!", a, b);
+103 +         assert_ne!(a.color(), b.color(), "Tile {a:?} and {b:?} have the same color!");
+    |
+
+warning: variables can be used directly in the `format!` string
+   --> tests\tilekind_bdd.rs:112:9
+    |
+112 | /         assert!(
+113 | |             col.r > 0.0 || col.g > 0.0 || col.b > 0.0,
+114 | |             "Tile {:?} has black color", t
+115 | |         );
+    | |_________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#uninlined_format_ar
+gs
+help: change this to
+    |
+114 -             "Tile {:?} has black color", t
+114 +             "Tile {t:?} has black color"
+    |
+
+warning: `golden-sun` (test "tilekind_bdd") generated 2 warnings (run `cargo clippy --fix --test "tilekind_bdd"` to app
+ly 2 suggestions)
+warning: variants `Armor` and `Accessory` are never constructed
+   --> src\game\mod.rs:119:5
+    |
+117 | pub enum EquipmentSlot {
+    |          ------------- variants in this enum
+118 |     Weapon,
+119 |     Armor,
+    |     ^^^^^
+120 |     Accessory,
+    |     ^^^^^^^^^
+    |
+    = note: `EquipmentSlot` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored d
+uring dead code analysis
+    = note: `#[warn(dead_code)]` on by default
+
+warning: multiple fields are never read
+   --> src\game\mod.rs:126:9
+    |
+125 | pub struct Equipment {
+    |            --------- fields in this struct
+126 |     pub name: &'static str,
+    |         ^^^^
+127 |     pub slot: EquipmentSlot,
+    |         ^^^^
+128 |     pub atk_bonus: u32,
+    |         ^^^^^^^^^
+129 |     pub def_bonus: u32,
+    |         ^^^^^^^^^
+130 |     pub hp_bonus: u32,
+    |         ^^^^^^^^
+131 |     pub price: u32,
+    |         ^^^^^
+132 |     pub description: &'static str,
+    |         ^^^^^^^^^^^
+    |
+    = note: `Equipment` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored durin
+g dead code analysis
+
+warning: associated function `new` is never used
+   --> src\game\mod.rs:136:18
+    |
+135 | impl Equipment {
+    | -------------- associated function in this implementation
+136 |     pub const fn new(name: &'static str, slot: EquipmentSlot, atk: u32, def: u32, hp: u32, price: u32, desc: &'st
+atic str) -> Self {
+    |                  ^^^
+
+warning: function `all_equipment` is never used
+   --> src\game\mod.rs:148:8
+    |
+148 | pub fn all_equipment() -> Vec<Equipment> {
+    |        ^^^^^^^^^^^^^
+
+warning: methods `equipment_bonuses` and `equip_item` are never used
+   --> src\game\mod.rs:854:12
+    |
+310 | impl GameCtx {
+    | ------------ methods in this implementation
+...
+854 |     pub fn equipment_bonuses(&self) -> (u32, u32, u32) {
+    |            ^^^^^^^^^^^^^^^^^
+...
+885 |     pub fn equip_item(&mut self, slot: EquipmentSlot, idx: usize) -> bool {
+    |            ^^^^^^^^^^
+
+warning: unnecessary use of `to_string`
+   --> src\game\draw.rs:707:23
+    |
+707 |             draw_text("LEVEL UP!".to_string(),
+    |                       ^^^^^^^^^^^^^^^^^^^^^^^ help: use: `"LEVEL UP!"`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#unnecessary_to_owne
+d
+    = note: `#[warn(clippy::unnecessary_to_owned)]` on by default
+
+warning: `golden-sun` (bin "golden-sun") generated 6 warnings (run `cargo clippy --fix --bin "golden-sun"` to apply 1 s
+uggestion)
+warning: `golden-sun` (bin "golden-sun" test) generated 6 warnings (6 duplicates)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.39s

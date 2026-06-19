@@ -11,8 +11,7 @@ pub enum SceneId {
     Vale,
     WildForest,
     Cave,
-    // Phase 4+: SolSanctum, WorldMap, Kolima, ...
-    // Phase 6: MenuScreen
+    SolSanctum,
 }
 
 /// 场景注册表 — 管理场景切换、加载和资源生命周期

@@ -61,6 +61,8 @@ pub enum GameState {
     Travel { selection: usize },
     /// Djinn 菜单 — 显示已收集的 Djinn 列表，允许装备/卸下
     DjinnMenu { selection: usize, page: usize, character_select: u32 },
+    /// 升级动画状态
+    LevelUp { old_level: u32, new_level: u32, timer: f32 },
 }
 
 impl GameState {

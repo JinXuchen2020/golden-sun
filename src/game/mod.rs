@@ -84,8 +84,10 @@ impl PlayerStats {
         }
     }
 
-    pub fn add_exp(&mut self, amount: u32) {
+    pub fn add_exp(&mut self, amount: u32) -> Option<u32> {
+        // Returns Some(new_level) if leveled up, None otherwise
         self.exp += amount;
+        let mut leveled_up = false;
         while self.exp >= self.exp_to_next {
             self.exp -= self.exp_to_next;
             self.level += 1;
@@ -94,6 +96,12 @@ impl PlayerStats {
             self.attack += 2;
             self.defense += 1;
             self.exp_to_next = self.level * 20;
+            leveled_up = true;
+        }
+        if leveled_up {
+            Some(self.level)
+        } else {
+            None
         }
     }
 }
@@ -102,6 +110,55 @@ impl Default for PlayerStats {
     fn default() -> Self {
         Self::new()
     }
+}
+
+/// 装备槽位
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EquipmentSlot {
+    Weapon,
+    Armor,
+    Accessory,
+}
+
+/// 装备
+#[derive(Debug, Clone)]
+pub struct Equipment {
+    pub name: &'static str,
+    pub slot: EquipmentSlot,
+    pub atk_bonus: u32,
+    pub def_bonus: u32,
+    pub hp_bonus: u32,
+    pub price: u32,
+    pub description: &'static str,
+}
+
+impl Equipment {
+    pub const fn new(name: &'static str, slot: EquipmentSlot, atk: u32, def: u32, hp: u32, price: u32, desc: &'static str) -> Self {
+        Self { name, slot, atk_bonus: atk, def_bonus: def, hp_bonus: hp, price, description: desc }
+    }
+}
+
+impl Default for Equipment {
+    fn default() -> Self {
+        Self { name: "None", slot: EquipmentSlot::Weapon, atk_bonus: 0, def_bonus: 0, hp_bonus: 0, price: 0, description: "" }
+    }
+}
+
+/// 所有装备数据库
+pub fn all_equipment() -> Vec<Equipment> {
+    vec![
+        Equipment::new("短剑", EquipmentSlot::Weapon, 3, 0, 0, 50, "一把普通的短剑"),
+        Equipment::new("铁剑", EquipmentSlot::Weapon, 6, 0, 0, 120, "铁匠打造的实用长剑"),
+        Equipment::new("长剑", EquipmentSlot::Weapon, 10, 0, 0, 250, "锋利的精钢长剑"),
+        Equipment::new("精灵之刃", EquipmentSlot::Weapon, 15, 2, 5, 500, "灌注了精灵之力的魔法剑"),
+        Equipment::new("布甲", EquipmentSlot::Armor, 0, 3, 0, 40, "轻便的布制防具"),
+        Equipment::new("皮甲", EquipmentSlot::Armor, 0, 6, 5, 100, "鞣制皮革制成的胸甲"),
+        Equipment::new("锁子甲", EquipmentSlot::Armor, 0, 10, 10, 200, "铁环编织的结实护甲"),
+        Equipment::new("精灵护甲", EquipmentSlot::Armor, 2, 15, 20, 450, "精灵祝福过的魔法护甲"),
+        Equipment::new("守护戒指", EquipmentSlot::Accessory, 0, 5, 10, 80, "提升防御力和生命值"),
+        Equipment::new("力量手环", EquipmentSlot::Accessory, 5, 0, 0, 150, "增强佩戴者的攻击力"),
+        Equipment::new("精灵徽章", EquipmentSlot::Accessory, 3, 3, 15, 300, "共鸣着精灵能量的徽章"),
+    ]
 }
 
 const PLAYER_START_X: f32 = 15.0;
@@ -240,6 +297,14 @@ pub struct GameCtx {
     djinn_menu_selection: usize,
     /// 角色选择 (0=Isaac, 1=Garet)
     djinn_character_select: usize,
+    // ── Phase 7.3: 装备系统 ──
+    equipped_weapon: Option<usize>,
+    equipped_armor: Option<usize>,
+    equipped_accessory: Option<usize>,
+    /// 升级动画计时
+    level_up_old_level: u32,
+    level_up_new_level: u32,
+    level_up_timer: f32,
 }
 
 impl GameCtx {
@@ -323,6 +388,14 @@ impl GameCtx {
             djinn_menu_page: 0,
             djinn_menu_selection: 0,
             djinn_character_select: 0,
+            // ── Phase 7.3: 装备系统 ──
+            equipped_weapon: None,
+            equipped_armor: None,
+            equipped_accessory: None,
+            // ── 升级动画初始化 ──
+            level_up_old_level: 0,
+            level_up_new_level: 0,
+            level_up_timer: 0.0,
         }
     }
 
@@ -337,6 +410,7 @@ impl GameCtx {
             SceneId::Vale => "Vale",
             SceneId::WildForest => "WildForest",
             SceneId::Cave => "Cave",
+            SceneId::SolSanctum => "SolSanctum",
             _ => "Vale",
         };
 
@@ -380,6 +454,7 @@ impl GameCtx {
                 golden_sun::SceneId::Vale => "Vale",
                 golden_sun::SceneId::WildForest => "WildForest",
                 golden_sun::SceneId::Cave => "Cave",
+                golden_sun::SceneId::SolSanctum => "SolSanctum",
                 _ => "Vale",
             }.into(),
             player_x: self.camera.x,
@@ -396,6 +471,9 @@ impl GameCtx {
             player_defense: self.player_stats.defense,
             collected_djinn: collected,
             equipped_djinn: equipped,
+            equipped_weapon: self.equipped_weapon,
+            equipped_armor: self.equipped_armor,
+            equipped_accessory: self.equipped_accessory,
             timestamp: std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .map(|d| d.as_secs())
@@ -436,7 +514,12 @@ impl GameCtx {
                                 od.equipped_to = Some(*slot);
                             }
                         }
-                        
+
+                        // 恢复装备系统
+                        self.equipped_weapon = data.equipped_weapon;
+                        self.equipped_armor = data.equipped_armor;
+                        self.equipped_accessory = data.equipped_accessory;
+
                         if !self.collected_djinn.is_empty() {
                             self.apply_djinn_bonuses();
                         }
@@ -527,7 +610,9 @@ impl GameCtx {
 
     /// 添加经验值并升级
     pub fn add_exp(&mut self, amount: u32) {
-        self.player_stats.add_exp(amount);
+        if let Some(new_level) = self.player_stats.add_exp(amount) {
+            self.trigger_level_up(self.player_stats.level - 1, new_level);
+        }
     }
 
     /// 播放 SFX 音效
@@ -747,6 +832,7 @@ impl GameCtx {
                 golden_sun::SceneId::Vale => "Vale",
                 golden_sun::SceneId::WildForest => "WildForest",
                 golden_sun::SceneId::Cave => "Cave",
+                golden_sun::SceneId::SolSanctum => "SolSanctum",
                 _ => "Vale",
             } {
                 let dist_sq = (px - tx).powi(2) + (py - ty).powi(2);
@@ -760,5 +846,67 @@ impl GameCtx {
                 }
             }
         }
+    }
+
+    // ── Phase 7.3: 装备系统方法 ──
+
+    /// 获取装备提供的总属性加成
+    pub fn equipment_bonuses(&self) -> (u32, u32, u32) {
+        let eqs = all_equipment();
+        let mut atk = 0u32;
+        let mut def = 0u32;
+        let mut hp = 0u32;
+
+        if let Some(idx) = self.equipped_weapon {
+            if idx < eqs.len() {
+                atk += eqs[idx].atk_bonus;
+                def += eqs[idx].def_bonus;
+                hp += eqs[idx].hp_bonus;
+            }
+        }
+        if let Some(idx) = self.equipped_armor {
+            if idx < eqs.len() {
+                atk += eqs[idx].atk_bonus;
+                def += eqs[idx].def_bonus;
+                hp += eqs[idx].hp_bonus;
+            }
+        }
+        if let Some(idx) = self.equipped_accessory {
+            if idx < eqs.len() {
+                atk += eqs[idx].atk_bonus;
+                def += eqs[idx].def_bonus;
+                hp += eqs[idx].hp_bonus;
+            }
+        }
+        (atk, def, hp)
+    }
+
+    /// 装备物品
+    pub fn equip_item(&mut self, slot: EquipmentSlot, idx: usize) -> bool {
+        let eqs = all_equipment();
+        if idx >= eqs.len() {
+            return false;
+        }
+        let eq = &eqs[idx];
+        if eq.slot != slot {
+            return false;
+        }
+        if eq.price > 0 && self.gold < eq.price {
+            return false;
+        }
+        match slot {
+            EquipmentSlot::Weapon => self.equipped_weapon = Some(idx),
+            EquipmentSlot::Armor => self.equipped_armor = Some(idx),
+            EquipmentSlot::Accessory => self.equipped_accessory = Some(idx),
+        }
+        true
+    }
+
+    /// 触发升级动画
+    pub fn trigger_level_up(&mut self, old_level: u32, new_level: u32) {
+        self.level_up_old_level = old_level;
+        self.level_up_new_level = new_level;
+        self.level_up_timer = 0.0;
+        self.state = GameState::LevelUp { old_level, new_level, timer: 0.0 };
     }
 }

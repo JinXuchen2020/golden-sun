@@ -9,6 +9,7 @@
 pub mod djinn;
 pub mod quest;
 pub mod loader;
+pub mod summon;
 
 use std::collections::HashMap;
 
@@ -32,11 +33,18 @@ pub fn enemies_for_area(area: &str) -> Vec<EnemyConfig> {
             EnemyConfig { name: "Spider", level: 3 },
             EnemyConfig { name: "Goblin", level: 5 },
             EnemyConfig { name: "Treant", level: 6 },
+            EnemyConfig { name: "Slime", level: 2 },
         ],
         "Cave" => vec![
             EnemyConfig { name: "Bat", level: 3 },
             EnemyConfig { name: "Golem", level: 7 },
             EnemyConfig { name: "Spider", level: 5 },
+            EnemyConfig { name: "Ghost", level: 6 },
+            EnemyConfig { name: "RatKing", level: 8 },
+        ],
+        "SolSanctum" => vec![
+            EnemyConfig { name: "MythrilGolem", level: 10 },
+            EnemyConfig { name: "AncientGuard", level: 9 },
         ],
         _ => vec![
             EnemyConfig { name: "Wolf", level: 3 },
@@ -79,6 +87,12 @@ pub struct SaveData {
     pub collected_djinn: Vec<String>,
     /// 已装备的 Djinn (djinn_id, slot_index)
     pub equipped_djinn: Vec<(String, u32)>,
+    /// 已装备武器索引
+    pub equipped_weapon: Option<usize>,
+    /// 已装备护甲索引
+    pub equipped_armor: Option<usize>,
+    /// 已装备饰品索引
+    pub equipped_accessory: Option<usize>,
     /// 存档时间戳
     pub timestamp: u64,
 }
@@ -108,6 +122,9 @@ impl SaveData {
             player_defense: 8,
             collected_djinn: Vec::new(),
             equipped_djinn: Vec::new(),
+            equipped_weapon: None,
+            equipped_armor: None,
+            equipped_accessory: None,
             timestamp: 0,
         }
     }

@@ -148,12 +148,58 @@ pub const CAVE_SCENE: SceneMap = SceneMap {
     encounter_enemies: &["Bat", "Golem", "Spider"],
 };
 
+// ── 索尔圣殿地图 (16x16) ──
+
+const SOL_SANCTUM_DATA: &[u8] = &[
+    // Row 0: all walls
+    5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
+    // Row 1: corridor
+    5,1,1,1,1,5,1,1,1,1,5,1,1,1,1,5,
+    // Row 2
+    5,1,5,5,1,5,1,5,5,1,5,1,5,5,1,5,
+    // Row 3
+    5,1,5,0,1,1,1,5,0,1,1,1,0,5,1,5,
+    // Row 4
+    5,1,5,1,5,5,5,5,1,5,5,5,1,5,1,5,
+    // Row 5
+    5,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,
+    // Row 6
+    5,1,5,5,1,5,0,0,0,5,1,5,5,1,5,5,
+    // Row 7
+    5,1,1,1,1,5,0,0,0,5,1,1,1,1,5,5,
+    // Row 8
+    5,5,5,5,1,5,0,0,0,5,1,5,5,5,5,5,
+    // Row 9
+    5,1,1,1,1,5,0,0,0,5,1,1,1,1,5,5,
+    // Row 10
+    5,1,5,5,1,5,5,5,5,5,1,5,5,1,5,5,
+    // Row 11
+    5,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,
+    // Row 12
+    5,1,5,5,1,5,1,5,5,1,5,1,5,5,1,5,
+    // Row 13
+    5,1,5,0,1,1,1,5,0,1,1,1,0,5,1,5,
+    // Row 14
+    5,1,5,5,5,5,5,5,5,5,5,5,5,5,1,5,
+    // Row 15: all walls
+    5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
+];
+
+pub const SOL_SANCTUM_SCENE: SceneMap = SceneMap {
+    data: SOL_SANCTUM_DATA,
+    width: 16,
+    height: 16,
+    encounter_rate: 0,
+    encounter_enemies: &[],
+};
+
 /// 根据场景 ID 获取对应的地图数据
 pub fn get_scene_map(scene_id: SceneId) -> &'static SceneMap {
     match scene_id {
         SceneId::Vale => &VALE_SCENE,
         SceneId::WildForest => &WILD_FOREST_SCENE,
         SceneId::Cave => &CAVE_SCENE,
+        SceneId::SolSanctum => &SOL_SANCTUM_SCENE,
         _ => &VALE_SCENE,
     }
 }
@@ -214,7 +260,7 @@ mod tests {
     #[test]
     fn wild_forest_encounter_rate() {
         assert_eq!(WILD_FOREST_SCENE.encounter_rate, 6);
-        assert!(WILD_FOREST_SCENE.encounter_enemies.len() > 0);
+        assert!(!WILD_FOREST_SCENE.encounter_enemies.is_empty());
     }
 
     #[test]
@@ -234,5 +280,20 @@ mod tests {
     fn cave_center_is_walkable() {
         assert!(CAVE_SCENE.is_walkable(8, 8));
         assert!(CAVE_SCENE.is_walkable(10, 10));
+    }
+
+    #[test]
+    fn sol_sanctum_map_exists() {
+        let map = get_scene_map(SceneId::SolSanctum);
+        assert_eq!(map.width, 16);
+        assert_eq!(map.height, 16);
+        assert!(!map.data.is_empty());
+    }
+
+    #[test]
+    fn sol_sanctum_has_center_open_area() {
+        let map = get_scene_map(SceneId::SolSanctum);
+        let tile = map.get_tile(7, 7);
+        assert_eq!(tile, TileKind::Void);
     }
 }

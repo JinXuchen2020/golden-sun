@@ -106,28 +106,44 @@ impl GameCtx {
                 self.trigger_random_encounter(moving);
                 self.check_scene_boundaries();
                 self.check_waypoints();
+                self.check_scene_triggers();
+                self.check_scene_events();
                 self.check_djinn_pickup();
                 self.game_time += self.time.delta;
                 self.particles.spawn(self.time.delta, golden_sun::engine::particle::ParticleKind::Rain);
                 self.particles.update(self.time.delta);
                 self.track_quest_progress();
+                self.update_story_progression();
 
                 if self.input_bus.consume(InputEvent::Confirm) {
                     if let Some(npc) = self.find_nearby_npc() {
                         if let Some(ref text) = npc.dialogue_id {
+                            // 如果已经对话过，显示重复对话
+                            if let Some(ref script) = self.current_dialogue_script {
+                                if let Some(flag) = script.start_flag {
+                                    if self.story_flags.get(flag) {
+                                        let repeat_text = golden_sun::dialogue::script::get_repeat_line(text);
+                                        self.dialogue = Some(DialogueState::new(repeat_text.to_string()));
+                                        self.state = GameState::Dialog;
+                                        return;
+                                    }
+                                }
+                            }
                             if let Some(s) = golden_sun::dialogue::script::get_script(text) {
                                 if let Some(flag) = s.start_flag {
                                     self.story_flags.set(flag);
                                 }
                                 // 完成"初遇村民"任务
                                 self.quest_log.complete("intro_talk");
-                                let text = s.pages[0].lines[0].text.to_string();
-                                self.dialogue = Some(DialogueState::new(text));
+                                let text_page = s.pages[0].lines[0].text.to_string();
+                                self.dialogue = Some(DialogueState::new(text_page));
+                                self.current_dialogue_script = Some(s.clone());
                             } else {
-                                self.dialogue = Some(DialogueState::new(text.clone()));
+                                let default_text = text.clone();
+                                self.dialogue = Some(DialogueState::new(default_text));
                             }
+                            self.state = GameState::Dialog;
                         }
-                        self.state = GameState::Dialog;
                     }
                 }
 
@@ -442,7 +458,9 @@ impl GameCtx {
                             self.recall_all_djinn();
                             if self.input_bus.consume(InputEvent::Confirm) {
                                 self.battle = None;
-                                self.state = GameState::WorldMap;
+                                if !matches!(self.state, GameState::LevelUp { .. }) {
+                                    self.state = GameState::WorldMap;
+                                }
                             }
                         }
                         BattlePhase::Defeat | BattlePhase::FleeSuccess => {
@@ -451,11 +469,30 @@ impl GameCtx {
                                 self.state = GameState::WorldMap;
                             }
                         }
-                        _ => {}
+                        BattlePhase::EnemyTurn => {
+                            // 敌人回合 — 自动执行
+                            if let Some(ref mut battle) = self.battle {
+                                let action = battle.enemy_decision();
+                                battle.execute_turn(action);
+                            }
+                        }
                     }
                 }
             }
+            GameState::LevelUp { .. } => {
+                self.update_level_up();
+            }
             _ => {}
+        }
+    }
+
+    /// 升级动画更新 — timer 推进，3 秒后自动切回 WorldMap
+    fn update_level_up(&mut self) {
+        if let GameState::LevelUp { old_level: _, new_level: _, ref mut timer } = self.state {
+            *timer += self.time.delta;
+            if *timer >= 3.0 {
+                self.state = GameState::WorldMap;
+            }
         }
     }
 
@@ -747,7 +784,8 @@ impl GameCtx {
             let next = match self.scene.current() {
                 golden_sun::SceneId::Vale => golden_sun::SceneId::WildForest,
                 golden_sun::SceneId::WildForest => golden_sun::SceneId::Cave,
-                golden_sun::SceneId::Cave => golden_sun::SceneId::Vale,
+                golden_sun::SceneId::Cave => golden_sun::SceneId::SolSanctum,
+                golden_sun::SceneId::SolSanctum => golden_sun::SceneId::Vale,
                 _ => golden_sun::SceneId::Vale,
             };
             self.request_scene_switch(next);
@@ -757,6 +795,7 @@ impl GameCtx {
                 golden_sun::SceneId::Vale => golden_sun::SceneId::Cave,
                 golden_sun::SceneId::WildForest => golden_sun::SceneId::Vale,
                 golden_sun::SceneId::Cave => golden_sun::SceneId::WildForest,
+                golden_sun::SceneId::SolSanctum => golden_sun::SceneId::Vale,
                 _ => golden_sun::SceneId::Vale,
             };
             self.request_scene_switch(next);
@@ -765,7 +804,8 @@ impl GameCtx {
             let next = match self.scene.current() {
                 golden_sun::SceneId::Vale => golden_sun::SceneId::WildForest,
                 golden_sun::SceneId::WildForest => golden_sun::SceneId::Cave,
-                golden_sun::SceneId::Cave => golden_sun::SceneId::Vale,
+                golden_sun::SceneId::Cave => golden_sun::SceneId::SolSanctum,
+                golden_sun::SceneId::SolSanctum => golden_sun::SceneId::Vale,
                 _ => golden_sun::SceneId::Vale,
             };
             self.request_scene_switch(next);
@@ -775,6 +815,7 @@ impl GameCtx {
                 golden_sun::SceneId::Vale => golden_sun::SceneId::Cave,
                 golden_sun::SceneId::WildForest => golden_sun::SceneId::Vale,
                 golden_sun::SceneId::Cave => golden_sun::SceneId::WildForest,
+                golden_sun::SceneId::SolSanctum => golden_sun::SceneId::Vale,
                 _ => golden_sun::SceneId::Vale,
             };
             self.request_scene_switch(next);
@@ -793,6 +834,34 @@ impl GameCtx {
         }
     }
 
+    /// 故事进展检测 — 根据 flag 自动完成对应任务
+    fn update_story_progression(&mut self) {
+        // Detect all 3 villagers met
+        if self.story_flags.get("met_ivan") && self.story_flags.get("met_mia")
+            && self.story_flags.get("met_garsmin")
+            && !self.story_flags.get("villagers_all_met")
+        {
+            self.story_flags.set("villagers_all_met");
+            self.quest_log.complete("talk_to_villagers");
+        }
+
+        // Detect Garet party ready
+        if self.story_flags.get("met_garet")
+            && self.story_flags.get("garsmin_sent_to_sanctum")
+            && !self.story_flags.get("party_ready")
+        {
+            self.story_flags.set("party_ready");
+            self.quest_log.complete("find_garet");
+        }
+
+        // Detect becoming adept (5+ djinn equipped)
+        let equipped_count = self.collected_djinn.iter().filter(|d| d.equipped).count();
+        if equipped_count >= 5 && !self.story_flags.get("became_adept") {
+            self.story_flags.set("became_adept");
+            self.quest_log.complete("become_adept");
+        }
+    }
+
     /// 检测玩家是否踩到传送点 tile
     fn check_waypoints(&mut self) {
         let tx = self.camera.x.floor() as i32;
@@ -802,6 +871,7 @@ impl GameCtx {
                 golden_sun::SceneId::Vale => "Vale",
                 golden_sun::SceneId::WildForest => "WildForest",
                 golden_sun::SceneId::Cave => "Cave",
+                golden_sun::SceneId::SolSanctum => "SolSanctum",
                 _ => "Vale",
             };
             let wp_name = format!("{scene_name}_waypoint_{tx}_{ty}");
@@ -814,6 +884,63 @@ impl GameCtx {
                     x: self.camera.x,
                     y: self.camera.y,
                 });
+            }
+        }
+    }
+
+    /// 检测场景出口/入口触发器
+    fn check_scene_triggers(&mut self) {
+        let px = self.camera.x;
+        let py = self.camera.y;
+
+        match self.scene.current() {
+            golden_sun::SceneId::Vale => {
+                if py <= 0.5 && (14.0..=18.0).contains(&px) {
+                    self.request_scene_switch(golden_sun::SceneId::SolSanctum);
+                }
+                if py >= 31.0 && (14.0..=18.0).contains(&px) {
+                    self.request_scene_switch(golden_sun::SceneId::WildForest);
+                }
+            }
+            golden_sun::SceneId::WildForest => {
+                if py <= 0.5 && (1.0..=4.0).contains(&px) {
+                    self.request_scene_switch(golden_sun::SceneId::Vale);
+                }
+                if px >= 19.0 && (9.0..=11.0).contains(&py) {
+                    self.request_scene_switch(golden_sun::SceneId::Cave);
+                }
+            }
+            golden_sun::SceneId::Cave => {
+                if px <= 0.5 && (9.0..=11.0).contains(&py) {
+                    self.request_scene_switch(golden_sun::SceneId::WildForest);
+                }
+            }
+            golden_sun::SceneId::SolSanctum => {
+                if py >= 15.0 && (7.0..=9.0).contains(&px) {
+                    self.request_scene_switch(golden_sun::SceneId::Vale);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    /// 检测场景事件（如进入圣殿中心）
+    fn check_scene_events(&mut self) {
+        if !matches!(self.state, GameState::WorldMap) {
+            return;
+        }
+        let px = self.camera.x.floor() as i32;
+        let py = self.camera.y.floor() as i32;
+
+        if self.scene.current() == golden_sun::SceneId::SolSanctum {
+            let center_dist = ((px - 7).abs() + (py - 7).abs()) as f32;
+            if center_dist <= 2.0 && !self.story_flags.get("at_sanctum_center") {
+                self.story_flags.set("at_sanctum_center");
+            }
+            if self.story_flags.get("completed_sol_sanctum")
+                && !self.story_flags.get("sanctum_aftermath")
+            {
+                self.story_flags.set("sanctum_aftermath");
             }
         }
     }

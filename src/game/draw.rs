@@ -62,6 +62,9 @@ impl GameCtx {
                 #[cfg(debug_assertions)]
                 self.draw_debug();
             }
+            GameState::LevelUp { old_level, new_level, timer } => {
+                self.draw_level_up(old_level, new_level, timer);
+            }
             GameState::Transition { kind, timer, .. } => {
                 self.draw_world_map();
                 golden_sun::ui::draw_transition(timer, kind);
@@ -614,6 +617,7 @@ impl GameCtx {
                 golden_sun::SceneId::Vale => "Vale Village",
                 golden_sun::SceneId::WildForest => "Wild Forest",
                 golden_sun::SceneId::Cave => "Dark Cave",
+                golden_sun::SceneId::SolSanctum => "Sol Sanctum",
                 _ => "Unknown",
             };
             golden_sun::ui::draw_hud(self.pp, self.max_pp, loc_name);
@@ -680,6 +684,55 @@ impl GameCtx {
             10.0, self.config.height - constants::SCREEN_MARGIN_BOTTOM, 14.0,
             constants::DEBUG_TEXT_COLOR,
         );
+    }
+
+    fn draw_level_up(&mut self, old_lv: u32, new_lv: u32, timer: f32) {
+        if timer < 0.5 {
+            let flash = (1.0 - timer / 0.5) * 0.7;
+            draw_rectangle(0.0, 0.0,
+                self.config.width, self.config.height,
+                Color::new(1.0, 0.9, 0.3, flash));
+        }
+
+        if (0.3..2.0).contains(&timer) {
+            let alpha = if timer < 0.5 {
+                (timer - 0.3) / 0.2 * 255.0
+            } else if timer > 1.8 {
+                (2.0 - timer) / 0.2 * 255.0
+            } else {
+                255.0
+            }.clamp(0.0, 255.0);
+
+            let size = 32.0 + (timer - 0.3).sin() * 4.0;
+            draw_text("LEVEL UP!".to_string(),
+                self.config.width / 2.0 - 80.0,
+                180.0, size,
+                Color::new(1.0, 0.9, 0.3, alpha / 255.0));
+
+            draw_text(format!("Lv.{old_lv} → Lv.{new_lv}"),
+                self.config.width / 2.0 - 60.0,
+                230.0, 20.0,
+                Color::new(1.0, 1.0, 0.8, alpha / 255.0));
+        }
+
+        if timer >= 1.5 {
+            let alpha = (1.0 - (timer - 1.5) / 1.5).clamp(0.0, 1.0) * 255.0;
+            let diff = new_lv - old_lv;
+            let my = 270.0;
+            draw_text(format!("HP +{}", diff * 8),
+                self.config.width / 2.0 - 60.0, my, 16.0,
+                Color::new(1.0, 0.3, 0.3, alpha / 255.0));
+            draw_text(format!("ATK +{}", diff * 2),
+                self.config.width / 2.0 - 60.0, my + 24.0, 16.0,
+                Color::new(1.0, 0.5, 0.3, alpha / 255.0));
+            draw_text(format!("DEF +{diff}"),
+                self.config.width / 2.0 - 60.0, my + 48.0, 16.0,
+                Color::new(0.3, 0.5, 1.0, alpha / 255.0));
+        }
+
+        if timer >= 3.0 {
+            self.state = GameState::WorldMap;
+        }
     }
 }
 

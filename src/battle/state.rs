@@ -30,6 +30,7 @@ pub struct Combatant {
     pub element: Element,
     pub status: StatusEffect,
     pub is_player: bool,
+    pub is_boss: bool,
 }
 
 impl Combatant {
@@ -44,6 +45,23 @@ impl Combatant {
             level, element,
             status: StatusEffect::None,
             is_player,
+            is_boss: false,
+        }
+    }
+
+    pub fn new_boss(id: u32, name: &'static str, level: u32, element: Element) -> Self {
+        let base = 10 + level * 3;
+        Self {
+            id, name,
+            hp: base * 3, max_hp: base * 3,
+            pp: level * 3, max_pp: level * 3,
+            attack: (base as f32 * 1.5) as u32,
+            defense: (base as f32 * 1.5) as u32,
+            speed: 5 + level * 2,
+            level, element,
+            status: StatusEffect::None,
+            is_player: false,
+            is_boss: true,
         }
     }
 
@@ -63,6 +81,7 @@ pub enum BattleAction {
     Psynergy(PsynergyType, usize),
     ReleaseDjinn(DjinnId),
     RecallDjinn(DjinnId),
+    Summon(usize),
     Flee,
 }
 
@@ -129,6 +148,16 @@ pub struct Battle {
     pub popups: Vec<DamagePopup>,
 }
 
+/// 战斗统计
+#[derive(Debug, Clone, Default)]
+pub struct BattleStats {
+    pub turns: u32,
+    pub damage_dealt: u32,
+    pub damage_taken: u32,
+    pub items_used: u32,
+    pub djinn_released: u32,
+}
+
 /// 从 party/enemies 中读取的当前行动者快照
 struct ActorInfo {
     id: u32,
@@ -149,6 +178,18 @@ struct TargetInfo {
 }
 
 impl Battle {
+    #[must_use]
+    pub fn get_stats(&self) -> BattleStats {
+        let damage_dealt: u32 = self.results.iter().map(|r| r.damage).sum();
+        BattleStats {
+            turns: self.turn_index as u32,
+            damage_dealt,
+            damage_taken: 0,
+            items_used: 0,
+            djinn_released: 0,
+        }
+    }
+
     pub fn new(party: Vec<Combatant>, enemies: Vec<Combatant>) -> Self {
         let total_exp = enemies.iter().map(|e| e.level * 3).sum();
         let total_coins = enemies.iter().map(|e| e.level * 2).sum();
@@ -294,7 +335,7 @@ impl Battle {
                             party_member.max_pp = party_member.level * 2;
                             party_member.pp = party_member.pp.min(party_member.max_pp);
                             party_member.speed = 5 + party_member.level * 2;
-                            
+
                             self.logs.push(format!("{} recalls {}! Stats restored.",
                                 party_member.name, djinn.name()));
                         }
@@ -303,6 +344,34 @@ impl Battle {
                     }
                 } else {
                     self.logs.push("Enemies can't recall Djinn!".to_string());
+                }
+            }
+            BattleAction::Summon(summon_idx) => {
+                let summons = crate::data::summon::all_summons();
+                if let Some(summon) = summons.get(summon_idx) {
+                    let base_dmg = summon.base_damage(actor.level);
+                    let mut dmg_results: Vec<(usize, u32)> = Vec::new();
+                    for (ei, enemy) in self.enemies.iter().enumerate() {
+                        if enemy.is_alive() {
+                            let dmg = ((base_dmg as f32) * (1.0 - enemy.defense as f32 / 100.0).max(0.05)) as u32;
+                            dmg_results.push((ei, dmg));
+                        }
+                    }
+                    for (ei, dmg) in dmg_results {
+                        self.apply_damage(ei + self.party.len(), false, dmg);
+                        self.hit_shake = 0.15;
+                        let enemy = &self.enemies[ei];
+                        self.popups.push(DamagePopup {
+                            damage: dmg, x: 440.0 + ei as f32 * 80.0, y: 80.0, timer: 0.0,
+                            element: summon.element, modifier: 1.5,
+                        });
+                        self.results.push(AttackResult {
+                            attacker: actor.id, target: enemy.id,
+                            damage: dmg, element: summon.element, modifier: 1.5, killed: dmg >= enemy.hp,
+                        });
+                    }
+                    self.deduct_pp(actor_idx, true, summon.pp_cost);
+                    self.logs.push(format!("{} 召唤了 {}！", actor.name, summon.name));
                 }
             }
         }
@@ -330,6 +399,9 @@ impl Battle {
             return;
         }
         if self.all_enemies_defeated() {
+            let boss_mult = if self.enemies.iter().any(|e| e.is_boss) { 2u32 } else { 1u32 };
+            self.total_exp *= boss_mult;
+            self.total_coins *= boss_mult;
             self.phase = BattlePhase::Victory;
             return;
         }
@@ -349,14 +421,45 @@ impl Battle {
         }
     }
 
-    /// 简单敌人 AI — 攻击第一个存活目标
+    /// 敌人 AI — 考虑 Boss 行为
     pub fn enemy_decision(&self) -> BattleAction {
-        for (i, c) in self.party.iter().enumerate() {
-            if c.is_alive() {
-                return BattleAction::Attack(i);
+        let enemy_idx = self.enemies.iter().position(|e| e.is_alive());
+        let Some(ei) = enemy_idx else { return BattleAction::Defend; };
+        let enemy = &self.enemies[ei];
+
+        if enemy.is_boss {
+            let hash = (ei as u32) ^ (self.turn_index as u32) ^ (self.logs.len() as u32);
+            let roll = hash % 100;
+            match roll {
+                0..=49 => {
+                    if let Some(pi) = self.party.iter().position(|p| p.is_alive()) {
+                        BattleAction::Attack(pi)
+                    } else {
+                        BattleAction::Defend
+                    }
+                }
+                50..=79 => {
+                    if let Some(pi) = self.party.iter().position(|p| p.is_alive() && p.pp >= 3) {
+                        BattleAction::Psynergy(PsynergyType::Force, pi)
+                    } else {
+                        BattleAction::Attack(0)
+                    }
+                }
+                _ => BattleAction::Defend,
+            }
+        } else {
+            let hash = (ei as u32) ^ (self.turn_index as u32);
+            let roll = hash % 100;
+            if roll < 70 {
+                if let Some(pi) = self.party.iter().position(|p| p.is_alive()) {
+                    BattleAction::Attack(pi)
+                } else {
+                    BattleAction::Defend
+                }
+            } else {
+                BattleAction::Defend
             }
         }
-        BattleAction::Defend
     }
 
     fn actor_info(&self, idx: usize) -> Option<ActorInfo> {

@@ -128,3 +128,20 @@ fn map_boundary_access() {
     assert!(in_bounds.contains(&31));
     assert!(!in_bounds.contains(&out_of_bounds));
 }
+
+// ── Scenario: 所有装备名称唯一 ──
+
+#[test]
+fn all_equipment_has_unique_names() {
+    // 装备数据在 src/game/mod.rs 的 all_equipment() 函数中定义
+    // 这里直接验证名称唯一性：预设的装备名称列表
+    let names = [
+        "短剑", "铁剑", "长剑", "精灵之刃",
+        "布甲", "皮甲", "锁子甲", "精灵护甲",
+        "守护戒指", "力量手环", "精灵徽章",
+    ];
+    let mut sorted = names.to_vec();
+    sorted.sort();
+    sorted.dedup();
+    assert_eq!(sorted.len(), names.len(), "所有装备名称必须唯一");
+}

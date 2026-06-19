@@ -1,0 +1,371 @@
+﻿cargo : warning: variants `Armor` and `Accessory` are never constructed
+所在位置 行:1 字符: 1
++ cargo test 2>&1 | Out-File -FilePath F:\AI_Projects\golden-sun\test_f ...
++ ~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (warning: varian...ver constructed:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+   --> src\game\mod.rs:119:5
+    |
+117 | pub enum EquipmentSlot {
+    |          ------------- variants in this enum
+118 |     Weapon,
+119 |     Armor,
+    |     ^^^^^
+120 |     Accessory,
+    |     ^^^^^^^^^
+    |
+    = note: `EquipmentSlot` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored d
+uring dead code analysis
+    = note: `#[warn(dead_code)]` on by default
+
+warning: multiple fields are never read
+   --> src\game\mod.rs:126:9
+    |
+125 | pub struct Equipment {
+    |            --------- fields in this struct
+126 |     pub name: &'static str,
+    |         ^^^^
+127 |     pub slot: EquipmentSlot,
+    |         ^^^^
+128 |     pub atk_bonus: u32,
+    |         ^^^^^^^^^
+129 |     pub def_bonus: u32,
+    |         ^^^^^^^^^
+130 |     pub hp_bonus: u32,
+    |         ^^^^^^^^
+131 |     pub price: u32,
+    |         ^^^^^
+132 |     pub description: &'static str,
+    |         ^^^^^^^^^^^
+    |
+    = note: `Equipment` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored durin
+g dead code analysis
+
+warning: associated function `new` is never used
+   --> src\game\mod.rs:136:18
+    |
+135 | impl Equipment {
+    | -------------- associated function in this implementation
+136 |     pub const fn new(name: &'static str, slot: EquipmentSlot, atk: u32, def: u32, hp: u32, price: u32, desc: &'st
+atic str) -> Self {
+    |                  ^^^
+
+warning: function `all_equipment` is never used
+   --> src\game\mod.rs:148:8
+    |
+148 | pub fn all_equipment() -> Vec<Equipment> {
+    |        ^^^^^^^^^^^^^
+
+warning: methods `equipment_bonuses` and `equip_item` are never used
+   --> src\game\mod.rs:854:12
+    |
+310 | impl GameCtx {
+    | ------------ methods in this implementation
+...
+854 |     pub fn equipment_bonuses(&self) -> (u32, u32, u32) {
+    |            ^^^^^^^^^^^^^^^^^
+...
+885 |     pub fn equip_item(&mut self, slot: EquipmentSlot, idx: usize) -> bool {
+    |            ^^^^^^^^^^
+
+warning: `golden-sun` (bin "golden-sun") generated 5 warnings
+warning: `golden-sun` (bin "golden-sun" test) generated 5 warnings (5 duplicates)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.65s
+     Running unittests src\lib.rs (target\debug\deps\golden_sun-332461fef8b969e7.exe)
+
+running 138 tests
+test battle::calculator::tests::defense_reduces_damage ... ok
+test battle::calculator::tests::element_advantage_venus_over_jupiter ... ok
+test battle::calculator::tests::element_cycle_complete ... ok
+test battle::calculator::tests::element_disadvantage_venus_vs_mercury ... ok
+test battle::calculator::tests::element_neutral ... ok
+test battle::calculator::tests::physical_damage_advantage_higher ... ok
+test battle::calculator::tests::physical_damage_min_one ... ok
+test battle::calculator::tests::psynergy_damage_scales_with_level ... ok
+test battle::calculator::tests::psynergy_damage_variety ... ok
+test battle::state::tests::all_enemies_defeated_detection ... ok
+test battle::state::tests::all_party_defeated_detection ... ok
+test battle::state::tests::attack_reduces_enemy_hp ... ok
+test battle::state::tests::battle_init_phase ... ok
+test battle::state::tests::combatant_death ... ok
+test battle::state::tests::combatant_take_damage ... ok
+test battle::state::tests::defend_does_no_damage ... ok
+test battle::state::tests::enemy_ai_returns_attack ... ok
+test battle::state::tests::speed_order_has_all_combatants ... ok
+test battle::state::tests::total_exp_and_coins ... ok
+test battle::state::tests::victory_phase_on_all_enemies_down ... ok
+test data::djinn::tests::adept_unlocks_four_psynergies ... ok
+test data::djinn::tests::all_djinn_have_correct_elements ... ok
+test data::djinn::tests::calculate_set_bonus_empty ... ok
+test data::djinn::tests::calculate_total_bonuses_empty ... ok
+test data::djinn::tests::calculate_total_bonuses_with_equipped ... ok
+test data::djinn::tests::class_from_elements_adept_when_empty ... ok
+test data::djinn::tests::class_from_elements_all_elements ... ok
+test data::djinn::tests::class_from_elements_single_element_is_adept ... ok
+test data::djinn::tests::class_from_elements_three_elements ... ok
+test data::djinn::tests::class_from_elements_two_elements ... ok
+test data::djinn::tests::djinn_id_order_is_consistent ... ok
+test data::djinn::tests::djinn_id_to_str_roundtrip ... ok
+test data::djinn::tests::djinn_ids_are_unique ... ok
+test data::djinn::tests::is_djinn_collected_works ... ok
+test data::djinn::tests::release_multipliers_exist ... ok
+test data::djinn::tests::set_bonus_element_mapping ... ok
+test data::djinn::tests::set_bonus_name_nonempty ... ok
+test data::djinn::tests::transmoggrifier_unlocks_all_psynergies ... ok
+test data::djinn::tests::world_djinn_returns_three_locations ... ok
+test data::loader::tests::export_map_produces_valid_json ... ok
+test data::loader::tests::load_map_returns_none_for_missing ... ok
+test data::quest::tests::default_quests_provides_four_entries ... ok
+test data::quest::tests::quest_log_add_and_active ... ok
+test data::quest::tests::quest_log_all_completed_returns_none ... ok
+test data::quest::tests::quest_log_complete_marks_done ... ok
+test data::quest::tests::quest_log_complete_nonexistent_is_noop ... ok
+test data::quest::tests::quest_log_duplicate_skipped ... ok
+test data::quest::tests::quest_log_empty_by_default ... ok
+test data::summon::tests::all_summons_returns_9 ... ok
+test data::summon::tests::summon_base_damage_scales_with_level ... ok
+test data::summon::tests::summon_elements_cover_all_four ... ok
+test data::summon::tests::summon_requires_djinn ... ok
+test dialogue::script::tests::garet_page1_sets_met_garet ... ok
+test dialogue::script::tests::garet_page2_requires_met_garsmin ... ok
+test dialogue::script::tests::garet_script_exists ... ok
+test dialogue::script::tests::garsmin_page5_sets_sent_to_sanctum ... ok
+test dialogue::script::tests::garsmin_page6_sets_complete_1 ... ok
+test dialogue::script::tests::garsmin_page7_sets_farewell ... ok
+test dialogue::script::tests::garsmin_script_has_seven_pages ... ok
+test dialogue::script::tests::ivan_first_page_has_shop_choice ... ok
+test dialogue::script::tests::ivan_page2_sets_revealed_flag ... ok
+test dialogue::script::tests::ivan_page4_sets_heard_news_flag ... ok
+test dialogue::script::tests::ivan_script_has_four_pages ... ok
+test dialogue::script::tests::ivan_start_flag_is_set ... ok
+test dialogue::script::tests::mia_page2_sets_revealed_flag ... ok
+test dialogue::script::tests::mia_script_has_four_pages ... ok
+test dialogue::script::tests::sanctum_aftermath_script ... ok
+test dialogue::script::tests::sanctum_center_script ... ok
+test dialogue::script::tests::unknown_script_returns_none ... ok
+test dialogue::tests::advance_completes_eventually ... ok
+test dialogue::tests::advance_reveals_chars ... ok
+test dialogue::tests::dialogue_action_is_copy ... ok
+test dialogue::tests::dialogue_new_starts_empty ... ok
+test dialogue::tests::reset_reuses_struct ... ok
+test dialogue::tests::set_flag_action_affects_story_flags ... ok
+test dialogue::tests::skip_shows_all ... ok
+test dialogue::tests::story_flags_clear ... ok
+test dialogue::tests::story_flags_count ... ok
+test dialogue::tests::story_flags_default_false ... ok
+test dialogue::tests::story_flags_set_get ... ok
+test dialogue::tests::visible_text_returns_substring ... ok
+test dialogue::tests::zero_copy_visible_text ... ok
+test engine::game_state::tests::psynergy_anim_finished ... ok
+test engine::game_state::tests::psynergy_anim_progress ... ok
+test engine::game_state::tests::psynergy_anim_state_blocks_input ... ok
+test engine::game_state::tests::title_is_not_transition ... ok
+test engine::game_state::tests::transition_kinds_are_distinct ... ok
+test engine::game_state::tests::transition_variant_is_transition ... ok
+test engine::game_state::tests::world_map_is_not_transition ... ok
+test engine::replay::tests::playback_before_recording_returns_none ... ok
+test engine::replay::tests::replay_manager_plays_back ... ok
+test engine::replay::tests::replay_manager_records_frames ... ok
+test engine::replay::tests::ring_buffer_wraps ... ok
+test engine::resources::tests::clear_removes_all ... ok
+test engine::resources::tests::new_manager_is_empty ... ok
+test engine::resources::tests::store_and_get_audio ... ok
+test engine::resources::tests::store_and_get_texture ... ok
+test engine::resources::tests::unload_texture_removes_it ... ok
+test engine::storage::tests::fs_storage_exists_nonexistent ... ok
+test engine::storage::tests::fs_storage_file_path_is_safe ... ok
+test engine::storage::tests::fs_storage_sanitizes_special_chars ... ok
+test engine::window_config::tests::default_fullscreen_is_false ... ok
+test engine::window_config::tests::default_height_matches_constant ... ok
+test engine::window_config::tests::default_width_matches_constant ... ok
+test entity::sprite::tests::frame_size_is_correct ... ok
+test entity::sprite::tests::npc_animation_has_different_colors ... ok
+test entity::sprite::tests::player_has_12_frames ... ok
+test entity::sprite::tests::player_robin_has_visible_pixels ... ok
+test entity::tests::npc_has_dialogue ... ok
+test entity::tests::patrol_npc_has_waypoints ... ok
+test entity::tests::per_scene_npc_creation ... ok
+test entity::tests::player_created_with_id_zero ... ok
+test entity::tests::vale_has_three_npcs ... ok
+test map::tilemap::tests::bridge_is_walkable ... ok
+test map::tilemap::tests::cave_center_is_walkable ... ok
+test map::tilemap::tests::cave_edges_are_walls ... ok
+test map::tilemap::tests::cave_map_size ... ok
+test map::tilemap::tests::forest_is_not_walkable ... ok
+test map::tilemap::tests::map_bounds_void ... ok
+test map::tilemap::tests::player_start_is_walkable ... ok
+test map::tilemap::tests::road_is_walkable ... ok
+test map::tilemap::tests::sol_sanctum_has_center_open_area ... ok
+test map::tilemap::tests::sol_sanctum_map_exists ... ok
+test map::tilemap::tests::wild_forest_encounter_rate ... ok
+test psynergy::effects::tests::catch_noop_on_grass ... ok
+test psynergy::effects::tests::catch_opens_chest ... ok
+test psynergy::effects::tests::dispatch_all_psynergies ... ok
+test psynergy::effects::tests::freeze_noop_on_grass ... ok
+test psynergy::effects::tests::freeze_water_to_ice ... ok
+test psynergy::effects::tests::growth_grows_seed ... ok
+test psynergy::effects::tests::growth_noop_on_grass ... ok
+test psynergy::effects::tests::whirlwind_activates_windmill ... ok
+test psynergy::effects::tests::whirlwind_clears_vine ... ok
+test psynergy::effects::tests::whirlwind_noop_on_grass ... ok
+test scene::tests::commit_switch_applies_pending ... ok
+test scene::tests::commit_switch_without_pending_is_noop ... ok
+test scene::tests::new_registry_has_initial_scene ... ok
+test scene::tests::request_switch_sets_pending ... ok
+
+test result: ok. 138 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.61s
+
+     Running unittests tools\editor.rs (target\debug\deps\editor-2ee0aa0697abb776.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\main.rs (target\debug\deps\golden_sun-a3f095fdf20f93de.exe)
+
+running 8 tests
+test game::update::tests::dir_from_delta_dominant_axis ... ok
+test game::update::tests::dir_from_delta_pure_horizontal ... ok
+test game::update::tests::dir_from_delta_pure_vertical ... ok
+test game::update::tests::facing_from_angle_down_quadrant ... ok
+test game::update::tests::facing_from_angle_left_quadrant ... ok
+test game::update::tests::facing_from_angle_right_quadrant ... ok
+test game::update::tests::facing_from_angle_up_quadrant ... ok
+test game::update::tests::facing_from_angle_wraparound ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests\combat_bdd.rs (target\debug\deps\combat_bdd-915e325dc4544e95.exe)
+
+running 13 tests
+test ai_decision_by_hp ... ok
+test defeat_condition ... ok
+test element_advantage_multiplier ... ok
+test element_disadvantage_multiplier ... ok
+test element_neutral_multiplier ... ok
+test flee_speed_based_success ... ok
+test full_battle_state_machine_loop ... ok
+test high_defense_reduces_damage ... ok
+test insufficient_pp_blocks_psynergy ... ok
+test physical_attack_damage_range ... ok
+test psynergy_deducts_pp ... ok
+test same_element_psynergy_is_effective ... ok
+test victory_condition ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\core.rs (target\debug\deps\core-2f15c4c3446cac10.exe)
+
+running 22 tests
+test test_camera_rotate ... ok
+test test_camera_rotate_wraparound ... ok
+test test_camera_tile_index ... ok
+test test_camera_tile_world_roundtrip ... ok
+test test_camera_world_pos ... ok
+test test_fog_factor_full_at_zero_depth ... ok
+test test_fog_factor_min_at_max_depth ... ok
+test test_frametime_defaults ... ok
+test test_frametime_elapsed_increases ... ok
+test test_inputbus_consume_removes_event ... ok
+test test_inputbus_consume_returns_false_when_absent ... ok
+test test_inputbus_consume_returns_true_when_event_present ... ok
+test test_inputbus_multiple_events ... ok
+test test_is_interactive ... ok
+test test_is_walkable ... ok
+test test_map_tile_center ... ok
+test test_map_world_to_tile_index_floor ... ok
+test test_mode7_camera_world_coords ... ok
+test test_prepare_scanline_returns_none_above_horizon ... ok
+test test_prepare_scanline_returns_some_below_horizon ... ok
+test test_tilekind_color_returns_non_black_for_walkable_tiles ... ok
+test test_tilekind_from_u8 ... ok
+
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests\dialogue_bdd.rs (target\debug\deps\dialogue_bdd-91f701c5ab214fdb.exe)
+
+running 14 tests
+test branch_dialogue_selection ... ok
+test conditional_option_visibility ... ok
+test dialogue_action_give_item ... ok
+test dialogue_action_set_flag ... ok
+test dialogue_action_start_battle ... ok
+test dialogue_action_teleport ... ok
+test dialogue_action_unlock_psynergy ... ok
+test flag_persistence ... ok
+test linear_dialogue_flow ... ok
+test one_time_event ... ok
+test onenterregion_event_trigger ... ok
+test ontile_event_trigger ... ok
+test typewriter_a_key_skip ... ok
+test typewriter_effect_timing ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests\psynergy_bdd.rs (target\debug\deps\psynergy_bdd-d1991ac189e8c04c.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\save_bdd.rs (target\debug\deps\save_bdd-f7163b5742326c88.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\tilekind_bdd.rs (target\debug\deps\tilekind_bdd-85257147e569d1ac.exe)
+
+running 40 tests
+test all_equipment_has_unique_names ... ok
+test each_tile_has_unique_color ... ok
+test interactive_darkarea ... ok
+test interactive_grass ... ok
+test interactive_hiddenchest ... ok
+test interactive_ice ... ok
+test interactive_pushblock ... ok
+test interactive_seed ... ok
+test interactive_vine ... ok
+test interactive_wall ... ok
+test interactive_water ... ok
+test interactive_windmill ... ok
+test map_boundary_access ... ok
+test tilekind_encode_decode_bridge ... ok
+test tilekind_encode_decode_dirt ... ok
+test tilekind_encode_decode_forest ... ok
+test tilekind_encode_decode_grass ... ok
+test tilekind_encode_decode_pushblock ... ok
+test tilekind_encode_decode_sand ... ok
+test tilekind_encode_decode_snow ... ok
+test tilekind_encode_decode_stairs ... ok
+test tilekind_encode_decode_unknown ... ok
+test tilekind_encode_decode_void ... ok
+test tilekind_encode_decode_wall ... ok
+test tilekind_encode_decode_water ... ok
+test tilekind_encode_decode_waypoint ... ok
+test walkable_bridge ... ok
+test walkable_dirt ... ok
+test walkable_forest ... ok
+test walkable_grass ... ok
+test walkable_ice ... ok
+test walkable_pushblock ... ok
+test walkable_sand ... ok
+test walkable_snow ... ok
+test walkable_stairs ... ok
+test walkable_unknown ... ok
+test walkable_vine ... ok
+test walkable_vine_climbable ... ok
+test walkable_wall ... ok
+test walkable_water ... ok
+
+test result: ok. 40 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+   Doc-tests golden_sun
+
+running 2 tests
+test src\engine\mode7_camera.rs - engine::mode7_camera (line 11) ... ignored
+test src\engine\storage.rs - engine::storage (line 10) ... ignored
+
+test result: ok. 0 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

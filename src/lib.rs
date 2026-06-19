@@ -29,5 +29,6 @@ pub use engine::{Camera, FrameTime, GameState, InputState, PsynergyAnim, Transit
 pub use data::SaveData;
 pub use data::djinn::{DjinnId, Class, OwnedDjinn, SetBonus};
 pub use data::quest::{QuestEntry, QuestLog};
+pub use data::summon::{Summon, all_summons};
 pub use psynergy::{Element, PsynergyType};
 pub use scene::{SceneId, SceneRegistry};

@@ -121,6 +121,7 @@ pub fn create_npcs_for_scene(scene: SceneId) -> Vec<Entity> {
         SceneId::Vale => create_vale_npcs(),
         SceneId::WildForest => create_wild_forest_npcs(),
         SceneId::Cave => create_cave_npcs(),
+        SceneId::SolSanctum => vec![],
         _ => create_vale_npcs(),
     }
 }
