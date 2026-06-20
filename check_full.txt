@@ -1,0 +1,7 @@
+﻿cargo :     Checking golden-sun v0.1.0 (F:\AI_Projects\golden-sun)
+所在位置 行:1 字符: 1
++ cargo check 2>&1 | Out-File -FilePath "F:\AI_Projects\golden-sun\chec ...
++ ~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (    Checking go...cts\golden-sun):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

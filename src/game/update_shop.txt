@@ -1,0 +1,135 @@
+            GameState::Shop { npc_id: _, ref equipment_for_sale, ref items_for_sale, ref mut selection,
+                ref mut tab, ref mut sell_selection, ref mut message, ref mut message_timer } =>
+            {
+                **message_timer = (**message_timer - self.time.delta).max(0.0);
+                if **message_timer <= 0.0 {
+                    message.clear();
+                }
+
+                let mut new_tab = **tab;
+                let mut new_selection = **selection;
+                let mut new_sell_selection = **sell_selection;
+                let mut played_sfx: Option<&str> = None;
+
+                // 标签页切换
+                if self.input_bus.consume(InputEvent::Left) {
+                    new_tab = if new_tab == 0 { 2 } else { new_tab - 1 };
+                    new_selection = 0;
+                    new_sell_selection = 0;
+                    played_sfx = Some("cancel");
+                }
+                if self.input_bus.consume(InputEvent::Right) {
+                    new_tab = if new_tab == 2 { 0 } else { new_tab + 1 };
+                    new_selection = 0;
+                    new_sell_selection = 0;
+                    played_sfx = Some("cancel");
+                }
+
+                // 上下选择
+                if self.input_bus.consume(InputEvent::Up) {
+                    if new_tab < 2 {
+                        new_selection = new_selection.saturating_sub(1);
+                    } else {
+                        new_sell_selection = new_sell_selection.saturating_sub(1);
+                    }
+                    played_sfx = Some("cancel");
+                }
+                if self.input_bus.consume(InputEvent::Down) {
+                    if new_tab < 2 {
+                        let max_items = equipment_for_sale.len() + items_for_sale.len();
+                        new_selection = (new_selection + 1).min(max_items.saturating_sub(1));
+                    } else {
+                        new_sell_selection = (new_sell_selection + 1).min(self.inventory.iter().filter(|i| i.count > 0).count().saturating_sub(1));
+                    }
+                    played_sfx = Some("cancel");
+                }
+
+                // A 确认 - 购买/出售
+                if self.input_bus.consume(InputEvent::Confirm) {
+                    let eqs = super::all_equipment();
+                    let eq_count = equipment_for_sale.len();
+
+                    if new_tab == 0 && new_selection < eq_count {
+                        let eq_idx = equipment_for_sale[new_selection];
+                        if eq_idx < eqs.len() {
+                            let price = eqs[eq_idx].price;
+                            if self.gold >= price {
+                                self.gold -= price;
+                                let slot = eqs[eq_idx].slot;
+                                self.equip_item(slot, eq_idx);
+                                *message = "购买成功！".into();
+                                *message_timer = 2.0;
+                                played_sfx = Some("confirm");
+                            } else {
+                                *message = "金币不足！".into();
+                                *message_timer = 2.0;
+                                played_sfx = Some("cancel");
+                            }
+                        }
+                    } else if new_tab == 1 {
+                        let item_idx = new_selection - eq_count;
+                        if item_idx < items_for_sale.len() {
+                            let item_type_val = items_for_sale[item_idx];
+                            let price = match item_type_val {
+                                0 => 15,
+                                1 => 20,
+                                2 => 100,
+                                _ => 0,
+                            };
+                            if self.gold >= price {
+                                let item_type = match item_type_val {
+                                    0 => super::ItemType::Potion,
+                                    1 => super::ItemType::Ether,
+                                    2 => super::ItemType::GoldRing,
+                                    _ => super::ItemType::Potion,
+                                };
+                                if let Some(existing) = self.inventory.iter_mut().find(|i| i.item_type == item_type) {
+                                    existing.count += 1;
+                                } else {
+                                    self.inventory.push(super::Item::new(item_type));
+                                }
+                                *message = "购买成功！".into();
+                                *message_timer = 2.0;
+                                played_sfx = Some("confirm");
+                            } else {
+                                *message = "金币不足！".into();
+                                *message_timer = 2.0;
+                                played_sfx = Some("cancel");
+                            }
+                        }
+                    } else if new_tab == 2 {
+                        let sellable: Vec<usize> = self.inventory.iter().enumerate().filter(|(_, i)| i.count > 0).map(|(i, _)| i).collect();
+                        if new_sell_selection < sellable.len() {
+                            let real_idx = sellable[new_sell_selection];
+                            let price = match self.inventory[real_idx].item_type {
+                                super::ItemType::Potion => 7,
+                                super::ItemType::Ether => 10,
+                                super::ItemType::GoldRing => 50,
+                                _ => 0,
+                            };
+                            self.gold += price;
+                            self.inventory[real_idx].count -= 1;
+                            if self.inventory[real_idx].count == 0 {
+                                self.inventory.remove(real_idx);
+                            }
+                            *message = "出售成功！".into();
+                            *message_timer = 2.0;
+                            played_sfx = Some("confirm");
+                        }
+                    }
+                }
+
+                // B 取消 - 关闭商店
+                if self.input_bus.consume(InputEvent::Cancel) {
+                    played_sfx = Some("cancel");
+                    self.state = GameState::WorldMap;
+                }
+
+                if let Some(sfx) = played_sfx {
+                    self.play_sfx(sfx);
+                }
+
+                **tab = new_tab;
+                **selection = new_selection;
+                **sell_selection = new_sell_selection;
+            }

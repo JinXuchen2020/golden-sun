@@ -1,12 +1,14 @@
-use super::{GameCtx, SpriteAtlas};
+use super::{GameCtx, ItemType, SpriteAtlas};
 
 use golden_sun::battle::BattlePhase;
 use golden_sun::constants::{self, RENDER_TARGET_W, RENDER_TARGET_H, TILE_SIZE};
+use golden_sun::data::djinn;
 use golden_sun::engine::GameState;
 use golden_sun::entity::sprite::AnimState;
 use golden_sun::entity::Entity;
 use golden_sun::map::mode7;
 use golden_sun::Mode7Camera;
+use golden_sun::SceneId;
 use macroquad::prelude::*;
 
 impl GameCtx {
@@ -34,16 +36,21 @@ impl GameCtx {
                 self.draw_debug();
             }
             GameState::PsynergyAnim { anim } => {
-                // 解构取出 Copy 的 anim，避免 borrow 冲突
-                let anim_data = anim;
+                let anim_copy = anim;
                 self.draw_world_map();
-                self.draw_psynergy_effect_from_data(anim_data);
+                self.draw_psynergy_effect_from_data(anim_copy);
                 #[cfg(debug_assertions)]
                 self.draw_debug();
-                // 恢复 state
-                self.state = GameState::PsynergyAnim { anim: anim_data };
             }
             GameState::Battle => self.draw_battle(),
+            GameState::BattleMenu { selection: sel } => {
+                self.draw_battle();
+                self.draw_battle_menu(&sel);
+            }
+            GameState::BattleItemSelect { selection: sel } => {
+                self.draw_battle();
+                self.draw_battle_item_select(&sel);
+            }
             GameState::Menu => {
                 self.draw_world_map();
                 self.draw_menu();
@@ -65,9 +72,37 @@ impl GameCtx {
             GameState::LevelUp { old_level, new_level, timer } => {
                 self.draw_level_up(old_level, new_level, timer);
             }
+            GameState::Inn { cost, timer, restored } => {
+                self.draw_inn(cost, timer, restored);
+            }
+            GameState::Shop { npc_id, ref equipment_for_sale, ref items_for_sale, selection, tab, sell_selection, ref message, .. } => {
+                self.draw_shop(npc_id, equipment_for_sale, items_for_sale, selection, tab, sell_selection, message.as_str());
+            }
             GameState::Transition { kind, timer, .. } => {
                 self.draw_world_map();
                 golden_sun::ui::draw_transition(timer, kind);
+            }
+            GameState::DjinnObtained { name, element_color, timer, .. } => {
+                self.draw_world_map();
+                let alpha = if timer < 0.3 { timer / 0.3 }
+                            else if timer > 1.5 { (2.0 - timer) / 0.5 }
+                            else { 1.0 };
+                if alpha > 0.0 {
+                    let color = Color::new(element_color.0, element_color.1, element_color.2, alpha);
+                    draw_text(format!("获得了 Djinn：{name}！"),
+                        RENDER_TARGET_W as f32 / 2.0 - 80.0, RENDER_TARGET_H as f32 / 2.0, 18.0, color);
+                }
+            }
+            GameState::Cutscene { .. } => {
+                self.draw_world_map();
+            }
+            GameState::SceneName { name, timer } => {
+                self.draw_world_map();
+                let alpha = (1.0 - (timer / 1.5).min(1.0)).max(0.0);
+                if alpha > 0.0 {
+                    let color = Color::new(1.0, 1.0, 0.0, alpha);
+                    draw_text(name, RENDER_TARGET_W as f32 / 2.0 - 60.0, 100.0, 24.0, color);
+                }
             }
             _ => self.draw_placeholder(),
         }
@@ -103,6 +138,7 @@ impl GameCtx {
         self.particles.draw();
 
         self.render_npcs();
+        self.draw_djinn_hints();
 
         let screen_x = self.config.width * 0.5;
         let screen_y = self.config.height - constants::SCREEN_MARGIN_BOTTOM;
@@ -241,10 +277,11 @@ impl GameCtx {
     }
 
     fn draw_battle(&mut self) {
-        let Some(ref mut battle) = self.battle else { return; };
-        const SEP: &str = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
+        let scene = self.scene.current();
+        self.draw_battle_bg(scene);
+        let Some(ref mut battle) = self.battle else { return };
         draw_text("⚔️ BATTLE ⚔️", 10.0, 20.0, 24.0, YELLOW);
-        draw_text(SEP, 10.0, 30.0, 14.0, GRAY);
+        draw_text("━━━━━━━━━━━━━━━━━━━━━━━━━━━━", 10.0, 30.0, 14.0, GRAY);
 
         // 绘制战斗角色精灵
         let sprite_scale = 3.0;
@@ -369,10 +406,36 @@ impl GameCtx {
         }
 
         if battle.phase == BattlePhase::Victory {
-            draw_text("VICTORY!", 200.0, 200.0, 36.0, GREEN);
+            // 半透明面板背景
+            let panel_x = 120.0;
+            let panel_y = 120.0;
+            let panel_w = 400.0;
+            let panel_h = 200.0;
+            draw_rectangle(panel_x, panel_y, panel_w, panel_h, Color::from_rgba(0, 0, 0, 200));
+            draw_rectangle_lines(panel_x, panel_y, panel_w, panel_h, 2.0, GREEN);
+
+            let grade = Self::calculate_battle_grade(battle);
+            draw_text("VICTORY!", 300.0, 140.0, 28.0, GREEN);
+            draw_text(grade, 460.0, 140.0, 20.0, YELLOW);
+
             let reward = format!("EXP: {}  Coins: {}", battle.total_exp, battle.total_coins);
-            draw_text(&reward, 200.0, 240.0, 20.0, LIGHTGRAY);
-            draw_text("Press Confirm to continue", 200.0, 280.0, 16.0, GRAY);
+            draw_text(&reward, 200.0, 180.0, 18.0, LIGHTGRAY);
+
+            // 每个队员的 EXP 和等级进度条
+            let mut py = 210.0;
+            for combatant in &battle.party {
+                if combatant.is_alive() {
+                    let exp_per = combatant.level * 3;
+                    let max_exp = combatant.level * 20;
+                    let progress = (exp_per as f32 / max_exp as f32).min(1.0);
+                    draw_text(format!("{} Lv.{} EXP: {}/{}", combatant.name, combatant.level, exp_per, max_exp), 140.0, py, 14.0, WHITE);
+                    draw_rectangle(140.0, py + 6.0, 200.0, 8.0, DARKGRAY);
+                    draw_rectangle(140.0, py + 6.0, 200.0 * progress, 8.0, GREEN);
+                    py += 30.0;
+                }
+            }
+
+            draw_text("Press Confirm to continue", 250.0, 310.0, 14.0, GRAY);
         }
         if battle.phase == BattlePhase::Defeat {
             draw_text("DEFEATED...", 200.0, 200.0, 36.0, RED);
@@ -675,6 +738,65 @@ impl GameCtx {
             1.0, Color::from_rgba(200, 200, 200, 128));
     }
 
+    #[allow(dead_code)]
+    fn draw_battle_bg(&self, _scene: SceneId) {
+        let scene = self.scene.current();
+        let (r, g, b) = match scene {
+            SceneId::Vale => (0.1, 0.3, 0.1),
+            SceneId::WildForest => (0.05, 0.2, 0.05),
+            SceneId::Cave => (0.1, 0.1, 0.1),
+            SceneId::SolSanctum => (0.2, 0.1, 0.3),
+            _ => (0.1, 0.1, 0.2),
+        };
+        for y in (0..RENDER_TARGET_H as i32).step_by(2) {
+            let t = y as f32 / RENDER_TARGET_H as f32;
+            let alpha = t * 0.3 + 0.1;
+            draw_line(0.0, y as f32, RENDER_TARGET_W as f32, y as f32, 1.0,
+                Color::new(r + alpha, g + alpha, b + alpha, 1.0));
+        }
+        let ground_y = RENDER_TARGET_H as f32 * 0.6;
+        draw_line(0.0, ground_y, RENDER_TARGET_W as f32, ground_y, 2.0, Color::new(0.3, 0.3, 0.3, 1.0));
+    }
+
+    fn draw_battle_menu(&self, selection: &usize) {
+        const ACTIONS: &[&str] = &["Attack", "Defend", "Psynergy", "Summon", "Djinn", "Item", "Flee"];
+        let menu_y = 340.0;
+        draw_rectangle(0.0, menu_y, 300.0, 120.0, Color::from_rgba(0, 0, 0, 200));
+        for (i, action) in ACTIONS.iter().enumerate() {
+            let prefix = if i == *selection { "\u{25B8} " } else { "  " };
+            let color = if i == *selection { YELLOW } else { WHITE };
+            draw_text(format!("{prefix}{action}"), constants::BATTLE_MENU_X, menu_y + i as f32 * constants::BATTLE_MENU_LINE_H, 18.0, color);
+        }
+    }
+
+    fn draw_battle_item_select(&self, selection: &usize) {
+        let items: Vec<(&str, String)> = self.inventory.iter()
+            .filter(|i| i.count > 0)
+            .map(|i| (i.item_type.name(), format!("x{}", i.count)))
+            .collect();
+        if items.is_empty() {
+            return;
+        }
+        let menu_y = 340.0;
+        draw_rectangle(0.0, menu_y, 300.0, 120.0, Color::from_rgba(0, 0, 0, 200));
+        draw_text("-- Items --", 20.0, menu_y + 2.0, 16.0, YELLOW);
+        for (i, (name, count)) in items.iter().enumerate() {
+            let prefix = if i == *selection { "\u{25B8} " } else { "  " };
+            let color = if i == *selection { YELLOW } else { WHITE };
+            draw_text(format!("{prefix}{name} {count}"), 20.0, menu_y + 22.0 + i as f32 * 20.0, 16.0, color);
+        }
+        draw_text("Cancel: Back", 20.0, menu_y + 100.0, 12.0, GRAY);
+    }
+
+    fn calculate_battle_grade(battle: &golden_sun::battle::Battle) -> &'static str {
+        let turns = battle.turn_index.max(1) as u32;
+        let total_damage: u32 = battle.results.iter().map(|r| r.damage).sum();
+        let avg_damage = total_damage / turns.max(1);
+        if turns <= 2 && avg_damage > 20 { "★★★" }
+        else if turns <= 4 && avg_damage > 10 { "★★" }
+        else { "★" }
+    }
+
     fn draw_debug(&self) {
         let (wx, wy) = self.camera.world_pos();
         let (tx, ty) = self.camera.tile_index();
@@ -684,6 +806,126 @@ impl GameCtx {
             10.0, self.config.height - constants::SCREEN_MARGIN_BOTTOM, 14.0,
             constants::DEBUG_TEXT_COLOR,
         );
+    }
+
+    /// 绘制商店界面
+    #[allow(clippy::too_many_arguments)]
+    fn draw_shop(
+        &self,
+        _npc_id: u32,
+        equipment_for_sale: &[usize],
+        items_for_sale: &[ItemType],
+        selection: usize,
+        tab: usize,
+        sell_selection: usize,
+        message: &str,
+    ) {
+        let screen_w = RENDER_TARGET_W as f32;
+        let screen_h = RENDER_TARGET_H as f32;
+
+        // 半透明背景覆盖
+        draw_rectangle(0.0, 0.0, screen_w, screen_h, Color::from_rgba(0, 0, 0, 180));
+
+        // 商店标题
+        let title = match tab {
+            0 => "━━ 商店 ━━ 购买装备 ━━",
+            1 => "━━ 商店 ━━ 购买道具 ━━",
+            2 => "━━ 商店 ━━ 出售物品 ━━",
+            _ => "━━ 商店 ━━",
+        };
+        draw_text(title, screen_w / 2.0 - 80.0, 30.0, 16.0, YELLOW);
+
+        // 标签页切换提示
+        draw_text("[← →] 切换标签  [A] 购买/选择  [B] 返回", 20.0, screen_h - 20.0, 10.0, DARKGRAY);
+
+        // 金币显示
+        let gold_text = format!("金币: {}G", self.gold);
+        draw_text(&gold_text, screen_w - 120.0, 30.0, 14.0, GOLD);
+
+        // 商品列表
+        let eqs = super::all_equipment();
+        let start_y = 50.0;
+        let line_h = 20.0;
+
+        match tab {
+            0 | 1 => {
+                // 装备列表
+                for (i, eq_idx) in equipment_for_sale.iter().enumerate() {
+                    if *eq_idx >= eqs.len() { continue; }
+                    let eq = &eqs[*eq_idx];
+                    let y = start_y + i as f32 * line_h;
+                    let selected = i == selection;
+
+                    if selected {
+                        draw_rectangle(30.0, y - 2.0, screen_w - 60.0, line_h, Color::from_rgba(80, 80, 150, 130));
+                    }
+
+                    let can_afford = self.gold >= eq.price;
+                    let color = if !can_afford { DARKGRAY } else if selected { YELLOW } else { WHITE };
+                    draw_text(eq.name, 40.0, y + 12.0, 12.0, color);
+
+                    let bonus_str = format!("ATK+{} DEF+{} HP+{}", eq.atk_bonus, eq.def_bonus, eq.hp_bonus);
+                    draw_text(&bonus_str, 200.0, y + 12.0, 10.0, LIGHTGRAY);
+
+                    draw_text(format!("{}G", eq.price), screen_w - 100.0, y + 12.0, 12.0,
+                        if can_afford { GOLD } else { RED });
+                }
+
+                // 道具列表
+                let inv_offset = equipment_for_sale.len();
+                for (i, item_type) in items_for_sale.iter().enumerate() {
+                    let idx = inv_offset + i;
+                    let y = start_y + idx as f32 * line_h;
+                    let selected = idx == selection;
+
+                    if selected {
+                        draw_rectangle(30.0, y - 2.0, screen_w - 60.0, line_h, Color::from_rgba(80, 80, 150, 130));
+                    }
+
+                    let price = match item_type {
+                        ItemType::Potion => 15,
+                        ItemType::Ether => 20,
+                        ItemType::GoldRing => 100,
+                    };
+                    let color = if self.gold < price { DARKGRAY } else if selected { YELLOW } else { WHITE };
+                    draw_text(item_type.name(), 40.0, y + 12.0, 12.0, color);
+                    draw_text(format!("{price}G"), screen_w - 100.0, y + 12.0, 12.0, GOLD);
+                }
+            }
+            2 => {
+                // 出售模式：列出玩家物品栏
+                let items_text: Vec<String> = self.inventory.iter()
+                    .filter(|i| i.count > 0)
+                    .map(|i| format!("{} x{}", i.item_type.name(), i.count))
+                    .collect();
+
+                for (i, text) in items_text.iter().enumerate() {
+                    let y = start_y + i as f32 * line_h;
+                    let selected = i == sell_selection;
+
+                    if selected {
+                        draw_rectangle(30.0, y - 2.0, screen_w - 60.0, line_h, Color::from_rgba(80, 80, 150, 130));
+                    }
+
+                    let color = if selected { YELLOW } else { WHITE };
+                    draw_text(text, 40.0, y + 12.0, 12.0, color);
+                    draw_text("出售", screen_w - 100.0, y + 12.0, 12.0, GOLD);
+                }
+
+                if items_text.is_empty() {
+                    draw_text("没有可出售的物品", screen_w / 2.0 - 60.0, start_y + 20.0, 12.0, GRAY);
+                }
+            }
+            _ => {}
+        }
+
+        // 选中商品的详细描述（底部信息栏）
+        let desc_y = screen_h - 60.0;
+        draw_rectangle(0.0, desc_y - 5.0, screen_w, 40.0, Color::from_rgba(0, 0, 0, 130));
+
+        if !message.is_empty() {
+            draw_text(message, screen_w / 2.0 - 80.0, screen_h / 2.0, 16.0, YELLOW);
+        }
     }
 
     fn draw_level_up(&mut self, old_lv: u32, new_lv: u32, timer: f32) {
@@ -704,7 +946,7 @@ impl GameCtx {
             }.clamp(0.0, 255.0);
 
             let size = 32.0 + (timer - 0.3).sin() * 4.0;
-            draw_text("LEVEL UP!".to_string(),
+            draw_text("LEVEL UP!",
                 self.config.width / 2.0 - 80.0,
                 180.0, size,
                 Color::new(1.0, 0.9, 0.3, alpha / 255.0));
@@ -732,6 +974,66 @@ impl GameCtx {
 
         if timer >= 3.0 {
             self.state = GameState::WorldMap;
+        }
+    }
+
+    /// 绘制旅馆界面
+    fn draw_inn(&self, cost: u32, timer: f32, restored: bool) {
+        let screen_w = self.config.width;
+        let screen_h = self.config.height;
+
+        draw_rectangle(0.0, 0.0, screen_w, screen_h, Color::from_rgba(0, 0, 0, 153));
+
+        if restored {
+            draw_text("休息了一晚…", screen_w / 2.0 - 70.0, screen_h / 2.0 - 20.0, 16.0, WHITE);
+            draw_text("HP 和 PP 完全恢复了！", screen_w / 2.0 - 90.0, screen_h / 2.0, 16.0, GREEN);
+        } else {
+            let progress = (timer / 0.5).min(1.0);
+            let alpha = progress * 255.0;
+            draw_text("住宿中…", screen_w / 2.0 - 40.0, screen_h / 2.0, 16.0,
+                Color::new(1.0, 1.0, 1.0, alpha / 255.0));
+        }
+
+        draw_text(format!("- {cost}G"), screen_w / 2.0 - 20.0, screen_h / 2.0 + 30.0, 12.0, YELLOW);
+    }
+
+    fn draw_djinn_hints(&self) {
+        let px = self.camera.x;
+        let py = self.camera.y;
+        let current = self.scene.current();
+
+        for entry in djinn::world_djinn() {
+            let djinn_id = entry.0;
+            let scene_name = entry.1;
+            let tx = entry.2;
+            let ty = entry.3;
+            let current_name = match current {
+                SceneId::Vale => "Vale",
+                SceneId::WildForest => "WildForest",
+                SceneId::Cave => "Cave",
+                SceneId::SolSanctum => "SolSanctum",
+                _ => "",
+            };
+            if scene_name != current_name { continue; }
+
+            let collected = self.collected_djinn.iter().any(|d| {
+                d.djinn.id.as_str() == djinn_id.as_str()
+            });
+            if collected { continue; }
+
+            let dist_sq = (px - tx).powi(2) + (py - ty).powi(2);
+            if dist_sq < 9.0 {
+                let blink = (self.game_time * 3.0).sin().abs();
+                let (r, g, b) = match djinn_id.element() {
+                    golden_sun::Element::Venus => (0.2, 1.0, 0.2),
+                    golden_sun::Element::Mercury => (0.2, 0.5, 1.0),
+                    golden_sun::Element::Mars => (1.0, 0.3, 0.2),
+                    golden_sun::Element::Jupiter => (0.7, 0.2, 1.0),
+                };
+                let screen_x = RENDER_TARGET_W as f32 / 2.0;
+                let screen_y = RENDER_TARGET_H as f32 * 0.5 - 50.0 - blink * 8.0;
+                draw_circle(screen_x, screen_y, 3.0, Color::new(r, g, b, blink * 0.8));
+            }
         }
     }
 }

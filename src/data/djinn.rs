@@ -363,11 +363,17 @@ pub fn world_djinn() -> Vec<(DjinnId, &'static str, f32, f32)> {
     // 返回 (DjinnId, 场景名, tile_x, tile_y)
     vec![
         // Vale 村 — Fafnir (Venus, ATK+)
-        (DjinnId::Fafnir, "Vale", 8.0, 10.0),
-        // WildForest — Malina (Mercury, PP+)
-        (DjinnId::Malina, "WildForest", 12.0, 15.0),
-        // Cave — Betsy (Mars, DEF+)
-        (DjinnId::Betsy, "Cave", 6.0, 8.0),
+        (DjinnId::Fafnir, "Vale", 8.0, 11.0),
+        (DjinnId::Belian, "Vale", 24.0, 20.0),
+        // WildForest — Gnome (Venus, HP+), Vermin (Mercury, Speed+)
+        (DjinnId::Gnome, "WildForest", 5.0, 5.0),
+        (DjinnId::Vermin, "WildForest", 15.0, 10.0),
+        // Cave — Malina (Mercury, PP+), Betsy (Mars, DEF+)
+        (DjinnId::Malina, "Cave", 10.0, 12.0),
+        (DjinnId::Betsy, "Cave", 3.0, 3.0),
+        // SolSanctum — Laguna (Mars, ATK+), Undine (Mercury, DEF+Speed+)
+        (DjinnId::Laguna, "SolSanctum", 4.0, 3.0),
+        (DjinnId::Undine, "SolSanctum", 12.0, 10.0),
     ]
 }
 
@@ -616,9 +622,9 @@ mod tests {
     }
 
     #[test]
-    fn world_djinn_returns_three_locations() {
+    fn world_djinn_returns_eight_locations() {
         let djinn_locs = world_djinn();
-        assert_eq!(djinn_locs.len(), 3);
+        assert_eq!(djinn_locs.len(), 8);
     }
 
     #[test]

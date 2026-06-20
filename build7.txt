@@ -1,0 +1,89 @@
+﻿cargo :    Compiling golden-sun v0.1.0 (F:\AI_Projects\golden-sun)
+所在位置 行:1 字符: 1
++ cargo build 2>&1 | Out-File -FilePath "F:\AI_Projects\golden-sun\buil ...
++ ~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (   Compiling go...cts\golden-sun):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+warning: unused import: `super::ItemType`
+ --> src\game\update.rs:3:5
+  |
+3 | use super::ItemType;
+  |     ^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `all_cutscenes`
+  --> src\game\update.rs:17:34
+   |
+17 | use golden_sun::data::cutscene::{all_cutscenes, OPENING_CUTSCENE};
+   |                                  ^^^^^^^^^^^^^
+
+error[E0614]: type `f32` cannot be dereferenced
+   --> src\game\update.rs:527:17
+    |
+527 |                 *message_timer = (*message_timer - self.time.delta).max(0.0);
+    |                 ^^^^^^^^^^^^^^ can't be dereferenced
+
+error[E0614]: type `f32` cannot be dereferenced
+   --> src\game\update.rs:527:35
+    |
+527 |                 *message_timer = (*message_timer - self.time.delta).max(0.0);
+    |                                   ^^^^^^^^^^^^^^ can't be dereferenced
+
+error[E0614]: type `f32` cannot be dereferenced
+   --> src\game\update.rs:528:20
+    |
+528 |                 if *message_timer <= 0.0 {
+    |                    ^^^^^^^^^^^^^^ can't be dereferenced
+
+error[E0614]: type `usize` cannot be dereferenced
+   --> src\game\update.rs:532:35
+    |
+532 |                 let mut new_tab = *tab;
+    |                                   ^^^^ can't be dereferenced
+
+error[E0614]: type `usize` cannot be dereferenced
+   --> src\game\update.rs:533:41
+    |
+533 |                 let mut new_selection = *selection;
+    |                                         ^^^^^^^^^^ can't be dereferenced
+
+error[E0614]: type `usize` cannot be dereferenced
+   --> src\game\update.rs:534:46
+    |
+534 |                 let mut new_sell_selection = *sell_selection;
+    |                                              ^^^^^^^^^^^^^^^ can't be dereferenced
+
+error[E0614]: type `f32` cannot be dereferenced
+   --> src\game\update.rs:639:112
+    |
+639 |                     tab: new_tab, sell_selection: new_sell_selection, message: message.clone(), message_timer: *m
+essage_timer };
+    |                                                                                                                ^^
+^^^^^^^^^^^^ can't be dereferenced
+
+error[E0507]: cannot move out of `self.state.equipment_for_sale` as enum variant `Shop` which is behind a mutable refer
+ence
+  --> src\game\draw.rs:16:15
+   |
+16 |         match self.state {
+   |               ^^^^^^^^^^
+...
+69 |             GameState::Shop { npc_id, equipment_for_sale, items_for_sale, selection, tab, sell_selection, message,
+ .. } => {
+   |                                       ------------------  -------------- ...and here                      ------- 
+...and here
+   |                                       |
+   |                                       data moved here
+   |
+   = note: move occurs because these variables have types that don't implement the `Copy` trait
+help: consider borrowing here
+   |
+16 |         match &self.state {
+   |               +
+
+Some errors have detailed explanations: E0507, E0614.
+For more information about an error, try `rustc --explain E0507`.
+warning: `golden-sun` (bin "golden-sun") generated 2 warnings
+error: could not compile `golden-sun` (bin "golden-sun") due to 8 previous errors; 2 warnings emitted

@@ -1,0 +1,282 @@
+﻿cargo :    Compiling golden-sun v0.1.0 (F:\AI_Projects\golden-sun)
+所在位置 行:1 字符: 1
++ cargo build 2>&1 | Out-File -FilePath "F:\AI_Projects\golden-sun\buil ...
++ ~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (   Compiling go...cts\golden-sun):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+warning: unused import: `super::ItemType`
+ --> src\game\update.rs:3:5
+  |
+3 | use super::ItemType;
+  |     ^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `all_cutscenes`
+  --> src\game\update.rs:17:34
+   |
+17 | use golden_sun::data::cutscene::{all_cutscenes, OPENING_CUTSCENE};
+   |                                  ^^^^^^^^^^^^^
+
+error[E0614]: type `u32` cannot be dereferenced
+  --> src\game\draw.rs:67:31
+   |
+67 |                 self.draw_inn(*cost, *timer, *restored);
+   |                               ^^^^^ can't be dereferenced
+
+error[E0614]: type `f32` cannot be dereferenced
+  --> src\game\draw.rs:67:38
+   |
+67 |                 self.draw_inn(*cost, *timer, *restored);
+   |                                      ^^^^^^ can't be dereferenced
+
+error[E0614]: type `bool` cannot be dereferenced
+  --> src\game\draw.rs:67:46
+   |
+67 |                 self.draw_inn(*cost, *timer, *restored);
+   |                                              ^^^^^^^^^ can't be dereferenced
+
+error[E0614]: type `u32` cannot be dereferenced
+  --> src\game\draw.rs:70:32
+   |
+70 |                 self.draw_shop(*npc_id, equipment_for_sale, items_for_sale, *selection, *tab, *sell_selection, mes
+sage);
+   |                                ^^^^^^^ can't be dereferenced
+
+error[E0614]: type `usize` cannot be dereferenced
+  --> src\game\draw.rs:70:77
+   |
+70 |                 self.draw_shop(*npc_id, equipment_for_sale, items_for_sale, *selection, *tab, *sell_selection, mes
+sage);
+   |                                                                             ^^^^^^^^^^ can't be dereferenced
+
+error[E0614]: type `usize` cannot be dereferenced
+  --> src\game\draw.rs:70:89
+   |
+70 |                 self.draw_shop(*npc_id, equipment_for_sale, items_for_sale, *selection, *tab, *sell_selection, mes
+sage);
+   |                                                                                         ^^^^ can't be dereferenced
+
+error[E0614]: type `usize` cannot be dereferenced
+  --> src\game\draw.rs:70:95
+   |
+70 |                 self.draw_shop(*npc_id, equipment_for_sale, items_for_sale, *selection, *tab, *sell_selection, mes
+sage);
+   |                                                                                               ^^^^^^^^^^^^^^^ can'
+t be dereferenced
+
+error[E0308]: arguments to this method are incorrect
+   --> src\game\draw.rs:70:22
+    |
+70  |                 self.draw_shop(*npc_id, equipment_for_sale, items_for_sale, *selection, *tab, *sell_selection, me
+ssage);
+    |                      ^^^^^^^^^                                                                                 --
+----- expected `&str`, found `String`
+    |
+note: expected `&[usize]`, found `Vec<usize>`
+   --> src\game\draw.rs:70:41
+    |
+70  |                 self.draw_shop(*npc_id, equipment_for_sale, items_for_sale, *selection, *tab, *sell_selection, me
+ssage);
+    |                                         ^^^^^^^^^^^^^^^^^^
+    = note: expected reference `&[usize]`
+                  found struct `Vec<usize>`
+note: expected `&[u32]`, found `Vec<u32>`
+   --> src\game\draw.rs:70:61
+    |
+70  |                 self.draw_shop(*npc_id, equipment_for_sale, items_for_sale, *selection, *tab, *sell_selection, me
+ssage);
+    |                                                             ^^^^^^^^^^^^^^
+    = note: expected reference `&[u32]`
+                  found struct `Vec<u32>`
+note: method defined here
+   --> src\game\draw.rs:719:8
+    |
+719 |     fn draw_shop(
+    |        ^^^^^^^^^
+...
+722 |         equipment_for_sale: &[usize],
+    |         ----------------------------
+723 |         items_for_sale: &[u32],
+    |         ----------------------
+...
+727 |         message: &str,
+    |         -------------
+help: consider borrowing here
+    |
+70  |                 self.draw_shop(*npc_id, &equipment_for_sale, items_for_sale, *selection, *tab, *sell_selection, m
+essage);
+    |                                         +
+help: consider borrowing here
+    |
+70  |                 self.draw_shop(*npc_id, equipment_for_sale, &items_for_sale, *selection, *tab, *sell_selection, m
+essage);
+    |                                                             +
+help: consider borrowing here
+    |
+70  |                 self.draw_shop(*npc_id, equipment_for_sale, items_for_sale, *selection, *tab, *sell_selection, &m
+essage);
+    |                                                                                                                +
+
+warning: unreachable pattern
+   --> src\game\update.rs:629:33
+    |
+629 | ...                   _ => 0,
+    |                       ^ no value can reach this
+    |
+note: multiple earlier patterns match some of the same values
+   --> src\game\update.rs:629:33
+    |
+626 | ...                   super::ItemType::Potion => 7,
+    |                       ----------------------- matches some of the same values
+627 | ...                   super::ItemType::Ether => 10,
+    |                       ---------------------- matches some of the same values
+628 | ...                   super::ItemType::GoldRing => 50,
+    |                       ------------------------- matches some of the same values
+629 | ...                   _ => 0,
+    |                       ^ collectively making this unreachable
+    = note: `#[warn(unreachable_patterns)]` on by default
+
+warning: unused variable: `npc_id`
+   --> src\game\update.rs:524:31
+    |
+524 |             GameState::Shop { npc_id, ref equipment_for_sale, ref items_for_sale, ref mut selection,
+    |                               ^^^^^^ help: try ignoring the field: `npc_id: _`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+error[E0502]: cannot borrow `*self` as immutable because it is also borrowed as mutable
+   --> src\game\update.rs:541:21
+    |
+524 |             GameState::Shop { npc_id, ref equipment_for_sale, ref items_for_sale, ref mut selection,
+    |                                                                                   ----------------- mutable borro
+w occurs here
+...
+541 |                     self.play_sfx("cancel");
+    |                     ^^^^ immutable borrow occurs here
+...
+651 |                 *selection = new_selection;
+    |                 -------------------------- mutable borrow later used here
+
+error[E0502]: cannot borrow `*self` as immutable because it is also borrowed as mutable
+   --> src\game\update.rs:547:21
+    |
+524 |             GameState::Shop { npc_id, ref equipment_for_sale, ref items_for_sale, ref mut selection,
+    |                                                                                   ----------------- mutable borro
+w occurs here
+...
+547 |                     self.play_sfx("cancel");
+    |                     ^^^^ immutable borrow occurs here
+...
+651 |                 *selection = new_selection;
+    |                 -------------------------- mutable borrow later used here
+
+error[E0502]: cannot borrow `*self` as immutable because it is also borrowed as mutable
+   --> src\game\update.rs:557:21
+    |
+524 |             GameState::Shop { npc_id, ref equipment_for_sale, ref items_for_sale, ref mut selection,
+    |                                                                                   ----------------- mutable borro
+w occurs here
+...
+557 |                     self.play_sfx("cancel");
+    |                     ^^^^ immutable borrow occurs here
+...
+651 |                 *selection = new_selection;
+    |                 -------------------------- mutable borrow later used here
+
+error[E0502]: cannot borrow `*self` as immutable because it is also borrowed as mutable
+   --> src\game\update.rs:566:21
+    |
+524 |             GameState::Shop { npc_id, ref equipment_for_sale, ref items_for_sale, ref mut selection,
+    |                                                                                   ----------------- mutable borro
+w occurs here
+...
+566 |                     self.play_sfx("cancel");
+    |                     ^^^^ immutable borrow occurs here
+...
+651 |                 *selection = new_selection;
+    |                 -------------------------- mutable borrow later used here
+
+error[E0499]: cannot borrow `*self` as mutable more than once at a time
+   --> src\game\update.rs:580:33
+    |
+524 |             GameState::Shop { npc_id, ref equipment_for_sale, ref items_for_sale, ref mut selection,
+    |                                                                                   ----------------- first mutable
+ borrow occurs here
+...
+580 |                                 self.equip_item(eqs[eq_idx].slot, eq_idx);
+    |                                 ^^^^ second mutable borrow occurs here
+...
+651 |                 *selection = new_selection;
+    |                 -------------------------- first borrow later used here
+
+error[E0502]: cannot borrow `*self` as immutable because it is also borrowed as mutable
+   --> src\game\update.rs:583:33
+    |
+524 |             GameState::Shop { npc_id, ref equipment_for_sale, ref items_for_sale, ref mut selection,
+    |                                                                                   ----------------- mutable borro
+w occurs here
+...
+583 |                                 self.play_sfx("confirm");
+    |                                 ^^^^ immutable borrow occurs here
+...
+651 |                 *selection = new_selection;
+    |                 -------------------------- mutable borrow later used here
+
+error[E0502]: cannot borrow `*self` as immutable because it is also borrowed as mutable
+   --> src\game\update.rs:587:33
+    |
+524 |             GameState::Shop { npc_id, ref equipment_for_sale, ref items_for_sale, ref mut selection,
+    |                                                                                   ----------------- mutable borro
+w occurs here
+...
+587 |                                 self.play_sfx("cancel");
+    |                                 ^^^^ immutable borrow occurs here
+...
+651 |                 *selection = new_selection;
+    |                 -------------------------- mutable borrow later used here
+
+error[E0502]: cannot borrow `*self` as immutable because it is also borrowed as mutable
+   --> src\game\update.rs:614:33
+    |
+524 |             GameState::Shop { npc_id, ref equipment_for_sale, ref items_for_sale, ref mut selection,
+    |                                                                                   ----------------- mutable borro
+w occurs here
+...
+614 |                                 self.play_sfx("confirm");
+    |                                 ^^^^ immutable borrow occurs here
+...
+651 |                 *selection = new_selection;
+    |                 -------------------------- mutable borrow later used here
+
+error[E0502]: cannot borrow `*self` as immutable because it is also borrowed as mutable
+   --> src\game\update.rs:618:33
+    |
+524 |             GameState::Shop { npc_id, ref equipment_for_sale, ref items_for_sale, ref mut selection,
+    |                                                                                   ----------------- mutable borro
+w occurs here
+...
+618 |                                 self.play_sfx("cancel");
+    |                                 ^^^^ immutable borrow occurs here
+...
+651 |                 *selection = new_selection;
+    |                 -------------------------- mutable borrow later used here
+
+error[E0502]: cannot borrow `*self` as immutable because it is also borrowed as mutable
+   --> src\game\update.rs:638:29
+    |
+524 |             GameState::Shop { npc_id, ref equipment_for_sale, ref items_for_sale, ref mut selection,
+    |                                                                                   ----------------- mutable borro
+w occurs here
+...
+638 |                             self.play_sfx("confirm");
+    |                             ^^^^ immutable borrow occurs here
+...
+651 |                 *selection = new_selection;
+    |                 -------------------------- mutable borrow later used here
+
+Some errors have detailed explanations: E0308, E0499, E0502, E0614.
+For more information about an error, try `rustc --explain E0308`.
+warning: `golden-sun` (bin "golden-sun") generated 4 warnings
+error: could not compile `golden-sun` (bin "golden-sun") due to 18 previous errors; 4 warnings emitted

@@ -1,0 +1,111 @@
+﻿cargo :     Checking golden-sun v0.1.0 (F:\AI_Projects\golden-sun)
+所在位置 行:1 字符: 1
++ cargo check 2>&1 | Out-File -FilePath "F:\AI_Projects\golden-sun\chec ...
++ ~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (    Checking go...cts\golden-sun):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+warning: unused import: `super::ItemType`
+ --> src\game\update.rs:3:5
+  |
+3 | use super::ItemType;
+  |     ^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `all_cutscenes`
+  --> src\game\update.rs:17:34
+   |
+17 | use golden_sun::data::cutscene::{all_cutscenes, OPENING_CUTSCENE};
+   |                                  ^^^^^^^^^^^^^
+
+warning: unused import: `ItemType`
+ --> src\game\draw.rs:1:35
+  |
+1 | use super::{GameCtx, SpriteAtlas, ItemType};
+  |                                   ^^^^^^^^
+
+error[E0599]: no method named `saturating_sub` found for mutable reference `&mut f32` in the current scope
+   --> src\game\update.rs:527:48
+    |
+527 |                 *message_timer = message_timer.saturating_sub(self.time.delta);
+    |                                                ^^^^^^^^^^^^^^ method not found in `&mut f32`
+
+error[E0614]: type `bool` cannot be dereferenced
+   --> src\game\update.rs:660:21
+    |
+660 |                 if !**restored {
+    |                     ^^^^^^^^^^ can't be dereferenced
+
+error[E0614]: type `bool` cannot be dereferenced
+   --> src\game\update.rs:663:25
+    |
+663 |                         **restored = true;
+    |                         ^^^^^^^^^^ can't be dereferenced
+
+error[E0061]: this method takes 7 arguments but 8 arguments were supplied
+   --> src\game\draw.rs:72:22
+    |
+72  |                 self.draw_shop(npc_id, equipment_for_sale, items_for_sale, selection, tab, sell_selection, messag
+e, message_timer);
+    |                      ^^^^^^^^^                                                                             ------
+-  ------------- unexpected argument #8 of type `f32`
+    |                                                                                                            |
+    |                                                                                                            expect
+ed `&str`, found `String`
+    |
+note: expected `&[usize]`, found `Vec<usize>`
+   --> src\game\draw.rs:72:40
+    |
+72  |                 self.draw_shop(npc_id, equipment_for_sale, items_for_sale, selection, tab, sell_selection, messag
+e, message_timer);
+    |                                        ^^^^^^^^^^^^^^^^^^
+    = note: expected reference `&[usize]`
+                  found struct `Vec<usize>`
+note: expected `&[u32]`, found `Vec<u32>`
+   --> src\game\draw.rs:72:60
+    |
+72  |                 self.draw_shop(npc_id, equipment_for_sale, items_for_sale, selection, tab, sell_selection, messag
+e, message_timer);
+    |                                                            ^^^^^^^^^^^^^^
+    = note: expected reference `&[u32]`
+                  found struct `Vec<u32>`
+note: method defined here
+   --> src\game\draw.rs:721:8
+    |
+721 |     fn draw_shop(
+    |        ^^^^^^^^^
+...
+724 |         equipment_for_sale: &[usize],
+    |         ----------------------------
+725 |         items_for_sale: &[u32],
+    |         ----------------------
+...
+729 |         message: &str,
+    |         -------------
+help: consider borrowing here
+    |
+72  |                 self.draw_shop(npc_id, &equipment_for_sale, items_for_sale, selection, tab, sell_selection, messa
+ge, message_timer);
+    |                                        +
+help: consider borrowing here
+    |
+72  |                 self.draw_shop(npc_id, equipment_for_sale, &items_for_sale, selection, tab, sell_selection, messa
+ge, message_timer);
+    |                                                            +
+help: consider borrowing here
+    |
+72  |                 self.draw_shop(npc_id, equipment_for_sale, items_for_sale, selection, tab, sell_selection, &messa
+ge, message_timer);
+    |                                                                                                            +
+help: remove the extra argument
+    |
+72  -                 self.draw_shop(npc_id, equipment_for_sale, items_for_sale, selection, tab, sell_selection, messag
+e, message_timer);
+72  +                 self.draw_shop(npc_id, /* &[usize] */, /* &[u32] */, selection, tab, sell_selection, /* &str */);
+    |
+
+Some errors have detailed explanations: E0061, E0599, E0614.
+For more information about an error, try `rustc --explain E0061`.
+warning: `golden-sun` (bin "golden-sun") generated 3 warnings
+error: could not compile `golden-sun` (bin "golden-sun") due to 4 previous errors; 3 warnings emitted

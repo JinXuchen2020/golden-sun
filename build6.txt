@@ -1,0 +1,193 @@
+﻿cargo :    Compiling golden-sun v0.1.0 (F:\AI_Projects\golden-sun)
+所在位置 行:1 字符: 1
++ cargo build 2>&1 | Out-File -FilePath "F:\AI_Projects\golden-sun\buil ...
++ ~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (   Compiling go...cts\golden-sun):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+error[E0425]: cannot find value `npc_id` in this scope
+   --> src\game\update.rs:638:48
+    |
+638 |                 self.state = GameState::Shop { npc_id, equipment_for_sale, items_for_sale, selection: new_selecti
+on,
+    |                                                ^^^^^^ not found in this scope
+
+warning: unused import: `super::ItemType`
+ --> src\game\update.rs:3:5
+  |
+3 | use super::ItemType;
+  |     ^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `all_cutscenes`
+  --> src\game\update.rs:17:34
+   |
+17 | use golden_sun::data::cutscene::{all_cutscenes, OPENING_CUTSCENE};
+   |                                  ^^^^^^^^^^^^^
+
+error[E0614]: type `f32` cannot be dereferenced
+   --> src\game\update.rs:527:34
+    |
+527 |                 message_timer = (*message_timer - self.time.delta).max(0.0);
+    |                                  ^^^^^^^^^^^^^^ can't be dereferenced
+
+error[E0614]: type `f32` cannot be dereferenced
+   --> src\game\update.rs:528:20
+    |
+528 |                 if *message_timer <= 0.0 {
+    |                    ^^^^^^^^^^^^^^ can't be dereferenced
+
+error[E0614]: type `usize` cannot be dereferenced
+   --> src\game\update.rs:532:35
+    |
+532 |                 let mut new_tab = *tab;
+    |                                   ^^^^ can't be dereferenced
+
+error[E0614]: type `usize` cannot be dereferenced
+   --> src\game\update.rs:533:41
+    |
+533 |                 let mut new_selection = *selection;
+    |                                         ^^^^^^^^^^ can't be dereferenced
+
+error[E0614]: type `usize` cannot be dereferenced
+   --> src\game\update.rs:534:46
+    |
+534 |                 let mut new_sell_selection = *sell_selection;
+    |                                              ^^^^^^^^^^^^^^^ can't be dereferenced
+
+error[E0614]: type `golden_sun::PsynergyAnim` cannot be dereferenced
+  --> src\game\draw.rs:39:53
+   |
+39 |                 self.draw_psynergy_effect_from_data(*anim_data);
+   |                                                     ^^^^^^^^^^ can't be dereferenced
+
+error[E0614]: type `golden_sun::PsynergyAnim` cannot be dereferenced
+  --> src\game\draw.rs:42:62
+   |
+42 |                 self.state = GameState::PsynergyAnim { anim: *anim_data };
+   |                                                              ^^^^^^^^^^ can't be dereferenced
+
+error[E0614]: type `usize` cannot be dereferenced
+  --> src\game\draw.rs:59:38
+   |
+59 |                 self.draw_djinn_menu(*selection, *page, *character_select);
+   |                                      ^^^^^^^^^^ can't be dereferenced
+
+error[E0614]: type `usize` cannot be dereferenced
+  --> src\game\draw.rs:59:50
+   |
+59 |                 self.draw_djinn_menu(*selection, *page, *character_select);
+   |                                                  ^^^^^ can't be dereferenced
+
+error[E0614]: type `u32` cannot be dereferenced
+  --> src\game\draw.rs:59:57
+   |
+59 |                 self.draw_djinn_menu(*selection, *page, *character_select);
+   |                                                         ^^^^^^^^^^^^^^^^^ can't be dereferenced
+
+error[E0614]: type `u32` cannot be dereferenced
+  --> src\game\draw.rs:64:36
+   |
+64 |                 self.draw_level_up(*old_level, *new_level, *timer);
+   |                                    ^^^^^^^^^^ can't be dereferenced
+
+error[E0614]: type `u32` cannot be dereferenced
+  --> src\game\draw.rs:64:48
+   |
+64 |                 self.draw_level_up(*old_level, *new_level, *timer);
+   |                                                ^^^^^^^^^^ can't be dereferenced
+
+error[E0614]: type `f32` cannot be dereferenced
+  --> src\game\draw.rs:64:60
+   |
+64 |                 self.draw_level_up(*old_level, *new_level, *timer);
+   |                                                            ^^^^^^ can't be dereferenced
+
+error[E0614]: type `u32` cannot be dereferenced
+  --> src\game\draw.rs:67:31
+   |
+67 |                 self.draw_inn(*cost, *timer, *restored);
+   |                               ^^^^^ can't be dereferenced
+
+error[E0614]: type `f32` cannot be dereferenced
+  --> src\game\draw.rs:67:38
+   |
+67 |                 self.draw_inn(*cost, *timer, *restored);
+   |                                      ^^^^^^ can't be dereferenced
+
+error[E0614]: type `bool` cannot be dereferenced
+  --> src\game\draw.rs:67:46
+   |
+67 |                 self.draw_inn(*cost, *timer, *restored);
+   |                                              ^^^^^^^^^ can't be dereferenced
+
+error[E0614]: type `u32` cannot be dereferenced
+  --> src\game\draw.rs:70:32
+   |
+70 |                 self.draw_shop(*npc_id, &equipment_for_sale, &items_for_sale, *selection, *tab, *sell_selection, m
+essage);
+   |                                ^^^^^^^ can't be dereferenced
+
+error[E0614]: type `usize` cannot be dereferenced
+  --> src\game\draw.rs:70:79
+   |
+70 |                 self.draw_shop(*npc_id, &equipment_for_sale, &items_for_sale, *selection, *tab, *sell_selection, m
+essage);
+   |                                                                               ^^^^^^^^^^ can't be dereferenced
+
+error[E0614]: type `usize` cannot be dereferenced
+  --> src\game\draw.rs:70:91
+   |
+70 |                 self.draw_shop(*npc_id, &equipment_for_sale, &items_for_sale, *selection, *tab, *sell_selection, m
+essage);
+   |                                                                                           ^^^^ can't be dereferenc
+ed
+
+error[E0614]: type `usize` cannot be dereferenced
+  --> src\game\draw.rs:70:97
+   |
+70 |                 self.draw_shop(*npc_id, &equipment_for_sale, &items_for_sale, *selection, *tab, *sell_selection, m
+essage);
+   |                                                                                                 ^^^^^^^^^^^^^^^ ca
+n't be dereferenced
+
+error[E0308]: mismatched types
+   --> src\game\draw.rs:70:114
+    |
+70  |                 self.draw_shop(*npc_id, &equipment_for_sale, &items_for_sale, *selection, *tab, *sell_selection, 
+message);
+    |                      --------- arguments to this method are incorrect                                            
+^^^^^^^ expected `&str`, found `String`
+    |
+note: method defined here
+   --> src\game\draw.rs:719:8
+    |
+719 |     fn draw_shop(
+    |        ^^^^^^^^^
+...
+727 |         message: &str,
+    |         -------------
+help: consider borrowing here
+    |
+70  |                 self.draw_shop(*npc_id, &equipment_for_sale, &items_for_sale, *selection, *tab, *sell_selection, 
+&message);
+    |                                                                                                                  
++
+
+error[E0614]: type `f32` cannot be dereferenced
+  --> src\game\draw.rs:74:49
+   |
+74 |                 golden_sun::ui::draw_transition(*timer, *kind);
+   |                                                 ^^^^^^ can't be dereferenced
+
+error[E0614]: type `TransitionKind` cannot be dereferenced
+  --> src\game\draw.rs:74:57
+   |
+74 |                 golden_sun::ui::draw_transition(*timer, *kind);
+   |                                                         ^^^^^ can't be dereferenced
+
+Some errors have detailed explanations: E0308, E0425, E0614.
+For more information about an error, try `rustc --explain E0308`.
+warning: `golden-sun` (bin "golden-sun") generated 2 warnings
+error: could not compile `golden-sun` (bin "golden-sun") due to 24 previous errors; 2 warnings emitted

@@ -16,34 +16,8 @@ use golden_sun::data::quest::QuestLog;
 use golden_sun::data::djinn::{self, DjinnId, OwnedDjinn, SetBonus, Class};
 use macroquad::prelude::*;
 
-/// 道具类型
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ItemType {
-    Potion,
-    Ether,
-    GoldRing,
-}
-
-impl ItemType {
-    #[must_use]
-    pub fn name(&self) -> &'static str {
-        match self {
-            ItemType::Potion => "Potion",
-            ItemType::Ether => "Ether",
-            ItemType::GoldRing => "Gold Ring",
-        }
-    }
-
-    #[allow(dead_code)]
-    #[must_use]
-    pub fn description(&self) -> &'static str {
-        match self {
-            ItemType::Potion => "Restores 30 HP",
-            ItemType::Ether => "Restores 10 PP",
-            ItemType::GoldRing => "Increases gold drop",
-        }
-    }
-}
+/// 道具类型 — 别名指向 engine::constants::ItemType
+pub use golden_sun::engine::constants::ItemType;
 
 /// 道具实例
 #[derive(Debug, Clone)]
@@ -124,11 +98,13 @@ pub enum EquipmentSlot {
 #[derive(Debug, Clone)]
 pub struct Equipment {
     pub name: &'static str,
+    #[allow(dead_code)]
     pub slot: EquipmentSlot,
     pub atk_bonus: u32,
     pub def_bonus: u32,
     pub hp_bonus: u32,
     pub price: u32,
+    #[allow(dead_code)]
     pub description: &'static str,
 }
 
@@ -159,6 +135,35 @@ pub fn all_equipment() -> Vec<Equipment> {
         Equipment::new("力量手环", EquipmentSlot::Accessory, 5, 0, 0, 150, "增强佩戴者的攻击力"),
         Equipment::new("精灵徽章", EquipmentSlot::Accessory, 3, 3, 15, 300, "共鸣着精灵能量的徽章"),
     ]
+}
+
+/// 商店库存配置 — 返回 (装备索引列表, 道具列表)
+/// npc_id 用于区分不同NPC商店
+#[allow(dead_code)]
+pub fn shop_inventory(npc_id: u32) -> (Vec<usize>, Vec<ItemType>) {
+    match npc_id {
+        // Ivan 的武器/防具店
+        0 => (
+            vec![0, 1, 2, 3, 4, 5, 6, 7],
+            vec![ItemType::Potion, ItemType::Ether],
+        ),
+        // 通用杂货店
+        _ => (
+            vec![8, 9, 10],
+            vec![ItemType::Potion, ItemType::Ether],
+        ),
+    }
+}
+
+/// 出售价格（原价的一半）
+#[allow(dead_code)]
+pub fn sell_price(equipment_idx: usize) -> u32 {
+    let eqs = all_equipment();
+    if equipment_idx < eqs.len() {
+        eqs[equipment_idx].price / 2
+    } else {
+        0
+    }
 }
 
 const PLAYER_START_X: f32 = 15.0;
@@ -268,6 +273,8 @@ pub struct GameCtx {
     _storage: Box<dyn golden_sun::engine::storage::StorageBackend>,
     /// SFX 管理器（菜单音效）
     sfx_manager: Option<golden_sun::audio::SfxManager>,
+    /// BGM 管理器（背景音乐）
+    bgm_player: golden_sun::audio::BgmPlayer,
     /// 当前场景的 modified tiles 覆盖
     modified_tiles_current: std::collections::HashMap<(i32, i32), TileKind>,
     /// 场景切换目标
@@ -365,6 +372,7 @@ impl GameCtx {
             encounter_pending: false,
             _storage: golden_sun::engine::storage::create_storage(),
             sfx_manager: Some(golden_sun::audio::SfxManager::new().await),
+            bgm_player: golden_sun::audio::BgmPlayer::new().await,
             modified_tiles_current: HashMap::new(),
             pending_scene: None,
             activated_waypoints: vec![
@@ -560,6 +568,17 @@ impl GameCtx {
             self.npcs = create_npcs_for_scene(target);
             self.modified_tiles_current.clear();
             self.modified_tiles.clear();
+            self.state = GameState::SceneName {
+                name: target.display_name(),
+                timer: 0.0,
+            };
+            match target {
+                SceneId::Vale => self.play_bgm("vale"),
+                SceneId::WildForest => self.play_bgm("battle"),
+                SceneId::Cave => self.play_bgm("battle"),
+                SceneId::SolSanctum => self.play_bgm("boss"),
+                _ => {}
+            }
             #[cfg(debug_assertions)]
             eprintln!("场景切换至: {target:?}");
         }
@@ -620,6 +639,11 @@ impl GameCtx {
         if let Some(ref sfx) = self.sfx_manager {
             sfx.play(name);
         }
+    }
+
+    /// 播放 BGM 背景音乐
+    fn play_bgm(&mut self, name: &'static str) {
+        self.bgm_player.play(name);
     }
 
     pub fn step(&mut self) {
@@ -826,7 +850,7 @@ impl GameCtx {
     fn check_djinn_pickup(&mut self) {
         let px = self.camera.x.floor();
         let py = self.camera.y.floor();
-        
+
         for (djinn_id, scene_name, tx, ty) in djinn::world_djinn() {
             if scene_name == match self.scene.current() {
                 golden_sun::SceneId::Vale => "Vale",
@@ -836,13 +860,24 @@ impl GameCtx {
                 _ => "Vale",
             } {
                 let dist_sq = (px - tx).powi(2) + (py - ty).powi(2);
-                if dist_sq < 2.0 {
-                    // 附近有 Djinn，按 A 收集
-                    if self.input_bus.consume(golden_sun::InputEvent::Confirm)
-                        && !self.collected_djinn.iter().any(|d| d.djinn.id == djinn_id)
-                    {
-                        self.collect_djinn(djinn_id);
-                    }
+                if dist_sq < 2.0
+                    && !self.collected_djinn.iter().any(|d| d.djinn.id == djinn_id)
+                    && self.collect_djinn(djinn_id)
+                {
+                    let name = djinn_id.as_str();
+                    let color = match djinn_id.element() {
+                        golden_sun::Element::Venus => (0.2, 1.0, 0.2),
+                        golden_sun::Element::Mercury => (0.2, 0.5, 1.0),
+                        golden_sun::Element::Mars => (1.0, 0.3, 0.2),
+                        golden_sun::Element::Jupiter => (0.7, 0.2, 1.0),
+                    };
+                    self.state = GameState::DjinnObtained {
+                        djinn_id: djinn_id as u32,
+                        name,
+                        element_color: color,
+                        timer: 0.0,
+                    };
+                    self.play_sfx("confirm");
                 }
             }
         }
@@ -851,6 +886,7 @@ impl GameCtx {
     // ── Phase 7.3: 装备系统方法 ──
 
     /// 获取装备提供的总属性加成
+    #[allow(dead_code)]
     pub fn equipment_bonuses(&self) -> (u32, u32, u32) {
         let eqs = all_equipment();
         let mut atk = 0u32;
@@ -882,6 +918,7 @@ impl GameCtx {
     }
 
     /// 装备物品
+    #[allow(dead_code)]
     pub fn equip_item(&mut self, slot: EquipmentSlot, idx: usize) -> bool {
         let eqs = all_equipment();
         if idx >= eqs.len() {

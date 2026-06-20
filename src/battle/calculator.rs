@@ -105,7 +105,7 @@ mod tests {
     fn psynergy_damage_variety() {
         for psynergy in PsynergyType::ALL {
             let dmg = calculate_psynergy_damage(5, Element::Venus, 3, Element::Jupiter, psynergy);
-            assert!(dmg >= 1, "psynergy {:?} deals 0 damage", psynergy);
+            assert!(dmg >= 1, "psynergy {psynergy:?} deals 0 damage");
         }
     }
 

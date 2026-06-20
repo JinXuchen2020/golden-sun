@@ -83,6 +83,7 @@ pub enum BattleAction {
     RecallDjinn(DjinnId),
     Summon(usize),
     Flee,
+    UseItem(crate::engine::ItemType, usize),
 }
 
 impl BattleAction {
@@ -372,6 +373,28 @@ impl Battle {
                     }
                     self.deduct_pp(actor_idx, true, summon.pp_cost);
                     self.logs.push(format!("{} 召唤了 {}！", actor.name, summon.name));
+                }
+            }
+            BattleAction::UseItem(item_type, target_idx) => {
+                if target_idx >= self.party.len() {
+                    self.logs.push("Invalid target!".to_string());
+                } else {
+                    let target = &mut self.party[target_idx];
+                    match item_type {
+                        crate::engine::ItemType::Potion => {
+                            let heal = 30u32;
+                            target.hp = (target.hp + heal).min(target.max_hp);
+                            self.logs.push(format!("{} 使用了药水，恢复了 {} HP！", target.name, heal));
+                        }
+                        crate::engine::ItemType::Ether => {
+                            let recover = 10u32;
+                            target.pp = (target.pp + recover).min(target.max_pp);
+                            self.logs.push(format!("{} 使用了以太，恢复了 {} PP！", target.name, recover));
+                        }
+                        _ => {
+                            self.logs.push("这个道具不能在战斗中使用".to_string());
+                        }
+                    }
                 }
             }
         }

@@ -1,0 +1,125 @@
+﻿cargo :     Checking golden-sun v0.1.0 (F:\AI_Projects\golden-sun)
+所在位置 行:1 字符: 1
++ cargo check 2>&1 | Out-File -FilePath "F:\AI_Projects\golden-sun\chec ...
++ ~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (    Checking go...cts\golden-sun):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+error[E0433]: failed to resolve: use of undeclared type `ItemType`
+   --> src\game\update.rs:592:41
+    |
+592 | ...                   ItemType::Potion => 15,
+    |                       ^^^^^^^^ use of undeclared type `ItemType`
+    |
+help: consider importing this enum
+    |
+1   + use crate::game::ItemType;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `ItemType`
+   --> src\game\update.rs:593:41
+    |
+593 | ...                   ItemType::Ether => 20,
+    |                       ^^^^^^^^ use of undeclared type `ItemType`
+    |
+help: consider importing this enum
+    |
+1   + use crate::game::ItemType;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `ItemType`
+   --> src\game\update.rs:594:41
+    |
+594 | ...                   ItemType::GoldRing => 100,
+    |                       ^^^^^^^^ use of undeclared type `ItemType`
+    |
+help: consider importing this enum
+    |
+1   + use crate::game::ItemType;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `ItemType`
+   --> src\game\update.rs:621:37
+    |
+621 | ...                   ItemType::Potion => 7,
+    |                       ^^^^^^^^ use of undeclared type `ItemType`
+    |
+help: consider importing this enum
+    |
+1   + use crate::game::ItemType;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `ItemType`
+   --> src\game\update.rs:622:37
+    |
+622 | ...                   ItemType::Ether => 10,
+    |                       ^^^^^^^^ use of undeclared type `ItemType`
+    |
+help: consider importing this enum
+    |
+1   + use crate::game::ItemType;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `ItemType`
+   --> src\game\update.rs:623:37
+    |
+623 | ...                   ItemType::GoldRing => 50,
+    |                       ^^^^^^^^ use of undeclared type `ItemType`
+    |
+help: consider importing this enum
+    |
+1   + use crate::game::ItemType;
+    |
+
+error[E0412]: cannot find type `ItemType` in this scope
+   --> src\game\draw.rs:726:27
+    |
+726 |         items_for_sale: &[ItemType],
+    |                           ^^^^^^^^ not found in this scope
+    |
+help: consider importing this enum
+    |
+1   + use crate::game::ItemType;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `ItemType`
+   --> src\game\draw.rs:798:25
+    |
+798 |                         ItemType::Potion => 15,
+    |                         ^^^^^^^^ use of undeclared type `ItemType`
+    |
+help: consider importing this enum
+    |
+1   + use crate::game::ItemType;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `ItemType`
+   --> src\game\draw.rs:799:25
+    |
+799 |                         ItemType::Ether => 20,
+    |                         ^^^^^^^^ use of undeclared type `ItemType`
+    |
+help: consider importing this enum
+    |
+1   + use crate::game::ItemType;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `ItemType`
+   --> src\game\draw.rs:800:25
+    |
+800 |                         ItemType::GoldRing => 100,
+    |                         ^^^^^^^^ use of undeclared type `ItemType`
+    |
+help: consider importing this enum
+    |
+1   + use crate::game::ItemType;
+    |
+
+warning: unused import: `all_cutscenes`
+  --> src\game\update.rs:16:34
+   |
+16 | use golden_sun::data::cutscene::{all_cutscenes, OPENING_CUTSCENE};
+   |                                  ^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+

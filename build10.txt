@@ -1,0 +1,103 @@
+﻿cargo :    Compiling golden-sun v0.1.0 (F:\AI_Projects\golden-sun)
+所在位置 行:1 字符: 1
++ cargo build 2>&1 | Out-File -FilePath "F:\AI_Projects\golden-sun\buil ...
++ ~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (   Compiling go...cts\golden-sun):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+warning: unused import: `super::ItemType`
+ --> src\game\update.rs:3:5
+  |
+3 | use super::ItemType;
+  |     ^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `all_cutscenes`
+  --> src\game\update.rs:17:34
+   |
+17 | use golden_sun::data::cutscene::{all_cutscenes, OPENING_CUTSCENE};
+   |                                  ^^^^^^^^^^^^^
+
+warning: unreachable pattern
+   --> src\game\update.rs:631:33
+    |
+631 | ...                   _ => 0,
+    |                       ^ no value can reach this
+    |
+note: multiple earlier patterns match some of the same values
+   --> src\game\update.rs:631:33
+    |
+628 | ...                   super::ItemType::Potion => 7,
+    |                       ----------------------- matches some of the same values
+629 | ...                   super::ItemType::Ether => 10,
+    |                       ---------------------- matches some of the same values
+630 | ...                   super::ItemType::GoldRing => 50,
+    |                       ------------------------- matches some of the same values
+631 | ...                   _ => 0,
+    |                       ^ collectively making this unreachable
+    = note: `#[warn(unreachable_patterns)]` on by default
+
+error[E0499]: cannot borrow `*self` as mutable more than once at a time
+   --> src\game\update.rs:582:33
+    |
+524 |             GameState::Shop { npc_id: _, ref equipment_for_sale, ref items_for_sale, ref mut selection,
+    |                                                                                      ----------------- first muta
+ble borrow occurs here
+...
+582 |                                 self.equip_item(slot, eq_idx);
+    |                                 ^^^^ second mutable borrow occurs here
+...
+656 |                 *selection = new_selection;
+    |                 -------------------------- first borrow later used here
+
+error[E0506]: cannot assign to `self.state` because it is borrowed
+   --> src\game\update.rs:648:21
+    |
+524 |             GameState::Shop { npc_id: _, ref equipment_for_sale, ref items_for_sale, ref mut selection,
+    |                                                                                      ----------------- `self.stat
+e` is borrowed here
+...
+648 |                     self.state = GameState::WorldMap;
+    |                     ^^^^^^^^^^ `self.state` is assigned to here but it was already borrowed
+...
+656 |                 *selection = new_selection;
+    |                 -------------------------- borrow later used here
+
+error[E0502]: cannot borrow `*self` as immutable because it is also borrowed as mutable
+   --> src\game\update.rs:652:21
+    |
+524 |             GameState::Shop { npc_id: _, ref equipment_for_sale, ref items_for_sale, ref mut selection,
+    |                                                                                      ----------------- mutable bo
+rrow occurs here
+...
+652 |                     self.play_sfx(sfx);
+    |                     ^^^^ immutable borrow occurs here
+...
+656 |                 *selection = new_selection;
+    |                 -------------------------- mutable borrow later used here
+
+error[E0507]: cannot move out of `self.state.equipment_for_sale` as enum variant `Shop` which is behind a mutable refer
+ence
+  --> src\game\draw.rs:16:15
+   |
+16 |         match self.state {
+   |               ^^^^^^^^^^
+...
+69 |             GameState::Shop { npc_id, equipment_for_sale, items_for_sale, selection, tab, sell_selection, message,
+ .. } => {
+   |                                       ------------------  -------------- ...and here                      ------- 
+...and here
+   |                                       |
+   |                                       data moved here
+   |
+   = note: move occurs because these variables have types that don't implement the `Copy` trait
+help: consider borrowing here
+   |
+16 |         match &self.state {
+   |               +
+
+Some errors have detailed explanations: E0499, E0502, E0506, E0507.
+For more information about an error, try `rustc --explain E0499`.
+warning: `golden-sun` (bin "golden-sun") generated 3 warnings
+error: could not compile `golden-sun` (bin "golden-sun") due to 4 previous errors; 3 warnings emitted

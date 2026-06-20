@@ -149,3 +149,23 @@ pub const HUD_Y: f32 = 20.0;
 /// HUD 文本字号
 pub const HUD_TEXT_SIZE: f32 = 16.0;
 
+// ── 道具类型（Phase 8.1） ──
+/// 道具类型枚举，用于商店系统和物品栏
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ItemType {
+    Potion,
+    Ether,
+    GoldRing,
+}
+
+impl ItemType {
+    #[must_use]
+    pub fn name(&self) -> &'static str {
+        match self {
+            ItemType::Potion => "Potion",
+            ItemType::Ether => "Ether",
+            ItemType::GoldRing => "Gold Ring",
+        }
+    }
+}
+

@@ -1,0 +1,185 @@
+﻿cargo :    Compiling golden-sun v0.1.0 (F:\AI_Projects\golden-sun)
+所在位置 行:1 字符: 1
++ cargo build 2>&1 | Out-File -FilePath "F:\AI_Projects\golden-sun\buil ...
++ ~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (   Compiling go...cts\golden-sun):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+warning: unused import: `super::ItemType`
+ --> src\game\update.rs:3:5
+  |
+3 | use super::ItemType;
+  |     ^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `all_cutscenes`
+  --> src\game\update.rs:17:34
+   |
+17 | use golden_sun::data::cutscene::{all_cutscenes, OPENING_CUTSCENE};
+   |                                  ^^^^^^^^^^^^^
+
+warning: unused import: `ItemType`
+ --> src\game\draw.rs:1:35
+  |
+1 | use super::{GameCtx, SpriteAtlas, ItemType};
+  |                                   ^^^^^^^^
+
+error[E0308]: mismatched types
+   --> src\game\draw.rs:40:53
+    |
+40  |                 self.draw_psynergy_effect_from_data(anim_data);
+    |                      ------------------------------ ^^^^^^^^^ expected `PsynergyAnim`, found `&PsynergyAnim`
+    |                      |
+    |                      arguments to this method are incorrect
+    |
+note: method defined here
+   --> src\game\draw.rs:515:8
+    |
+515 |     fn draw_psynergy_effect_from_data(&self, anim: golden_sun::PsynergyAnim) {
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^        ------------------------------
+help: consider dereferencing the borrow
+    |
+40  |                 self.draw_psynergy_effect_from_data(*anim_data);
+    |                                                     +
+
+error[E0308]: mismatched types
+  --> src\game\draw.rs:44:62
+   |
+44 |                 self.state = GameState::PsynergyAnim { anim: anim_data };
+   |                                                              ^^^^^^^^^ expected `PsynergyAnim`, found `&PsynergyAn
+im`
+   |
+help: consider dereferencing the borrow
+   |
+44 |                 self.state = GameState::PsynergyAnim { anim: *anim_data };
+   |                                                              +
+
+error[E0308]: arguments to this method are incorrect
+   --> src\game\draw.rs:61:22
+    |
+61  |                 self.draw_djinn_menu(selection, page, character_select);
+    |                      ^^^^^^^^^^^^^^^ ---------  ----  ---------------- expected `u32`, found `&u32`
+    |                                      |          |
+    |                                      |          expected `usize`, found `&usize`
+    |                                      expected `usize`, found `&usize`
+    |
+note: method defined here
+   --> src\game\draw.rs:471:8
+    |
+471 |     fn draw_djinn_menu(&self, selection: usize, _page: usize, character_select: u32) {
+    |        ^^^^^^^^^^^^^^^        ----------------  ------------  ---------------------
+help: consider dereferencing the borrow
+    |
+61  |                 self.draw_djinn_menu(*selection, page, character_select);
+    |                                      +
+help: consider dereferencing the borrow
+    |
+61  |                 self.draw_djinn_menu(selection, *page, character_select);
+    |                                                 +
+help: consider dereferencing the borrow
+    |
+61  |                 self.draw_djinn_menu(selection, page, *character_select);
+    |                                                       +
+
+error[E0308]: arguments to this method are incorrect
+   --> src\game\draw.rs:66:22
+    |
+66  |                 self.draw_level_up(old_level, new_level, timer);
+    |                      ^^^^^^^^^^^^^ ---------  ---------  ----- expected `f32`, found `&f32`
+    |                                    |          |
+    |                                    |          expected `u32`, found `&u32`
+    |                                    expected `u32`, found `&u32`
+    |
+note: method defined here
+   --> src\game\draw.rs:849:8
+    |
+849 |     fn draw_level_up(&mut self, old_lv: u32, new_lv: u32, timer: f32) {
+    |        ^^^^^^^^^^^^^            -----------  -----------  ----------
+help: consider dereferencing the borrow
+    |
+66  |                 self.draw_level_up(*old_level, new_level, timer);
+    |                                    +
+help: consider dereferencing the borrow
+    |
+66  |                 self.draw_level_up(old_level, *new_level, timer);
+    |                                               +
+help: consider dereferencing the borrow
+    |
+66  |                 self.draw_level_up(old_level, new_level, *timer);
+    |                                                          +
+
+error[E0308]: arguments to this method are incorrect
+   --> src\game\draw.rs:69:22
+    |
+69  |                 self.draw_inn(cost, timer, restored);
+    |                      ^^^^^^^^ ----  -----  -------- expected `bool`, found `&bool`
+    |                               |     |
+    |                               |     expected `f32`, found `&f32`
+    |                               expected `u32`, found `&u32`
+    |
+note: method defined here
+   --> src\game\draw.rs:899:8
+    |
+899 |     fn draw_inn(&self, cost: u32, timer: f32, restored: bool) {
+    |        ^^^^^^^^        ---------  ----------  --------------
+help: consider dereferencing the borrow
+    |
+69  |                 self.draw_inn(*cost, timer, restored);
+    |                               +
+help: consider dereferencing the borrow
+    |
+69  |                 self.draw_inn(cost, *timer, restored);
+    |                                     +
+help: consider dereferencing the borrow
+    |
+69  |                 self.draw_inn(cost, timer, *restored);
+    |                                            +
+
+error[E0308]: arguments to this function are incorrect
+  --> src\game\draw.rs:76:17
+   |
+76 |                 golden_sun::ui::draw_transition(timer, kind);
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -----  ---- expected `TransitionKind`, found `&TransitionKind`
+   |                                                 |
+   |                                                 expected `f32`, found `&f32`
+   |
+note: function defined here
+  --> F:\AI_Projects\golden-sun\src\ui\mod.rs:54:8
+   |
+54 | pub fn draw_transition(timer: f32, kind: TransitionKind) {
+   |        ^^^^^^^^^^^^^^^
+help: consider dereferencing the borrow
+   |
+76 |                 golden_sun::ui::draw_transition(*timer, kind);
+   |                                                 +
+help: consider dereferencing the borrow
+   |
+76 |                 golden_sun::ui::draw_transition(timer, *kind);
+   |                                                        +
+
+error[E0507]: cannot move out of `self.state.equipment_for_sale` as enum variant `Shop` which is behind a mutable refer
+ence
+   --> src\game\update.rs:87:15
+    |
+87  |         match self.state {
+    |               ^^^^^^^^^^
+...
+524 |             GameState::Shop { npc_id, equipment_for_sale, items_for_sale, selection,
+    |                                       ------------------  -------------- ...and here
+    |                                       |
+    |                                       data moved here
+525 |                 tab, sell_selection, mut message, mut message_timer } =>
+    |                                      ----------- ...and here
+    |
+    = note: move occurs because these variables have types that don't implement the `Copy` trait
+help: consider borrowing here
+    |
+87  |         match &self.state {
+    |               +
+
+Some errors have detailed explanations: E0308, E0507.
+For more information about an error, try `rustc --explain E0308`.
+warning: `golden-sun` (bin "golden-sun") generated 3 warnings
+error: could not compile `golden-sun` (bin "golden-sun") due to 7 previous errors; 3 warnings emitted
+warning: build failed, waiting for other jobs to finish...

@@ -111,6 +111,12 @@ pub fn create_vale_npcs() -> Vec<Entity> {
                 pause: 0.0,
             }),
         ),
+        // 旅馆老板娘 — 站在旅馆前
+        Entity::new_npc(
+            5, Entity::tile_to_world(10.0, 10.0),
+            Direction::Down, "innkeeper",
+            None,
+        ),
     ]
 }
 
@@ -129,8 +135,13 @@ pub fn create_npcs_for_scene(scene: SceneId) -> Vec<Entity> {
 fn create_wild_forest_npcs() -> Vec<Entity> {
     vec![
         Entity::new_npc(
-            10, Entity::tile_to_world(10.0, 10.0),
+            10, Entity::tile_to_world(10.0, 7.0),
             Direction::Down, "forest_traveler",
+            None,
+        ),
+        Entity::new_npc(
+            11, Entity::tile_to_world(14.0, 8.0),
+            Direction::Up, "forest_hermit",
             None,
         ),
     ]
@@ -141,6 +152,11 @@ fn create_cave_npcs() -> Vec<Entity> {
         Entity::new_npc(
             20, Entity::tile_to_world(8.0, 8.0),
             Direction::Up, "cave_sage",
+            None,
+        ),
+        Entity::new_npc(
+            21, Entity::tile_to_world(5.0, 10.0),
+            Direction::Up, "cave_prospector",
             None,
         ),
     ]
@@ -174,17 +190,23 @@ mod tests {
     #[test]
     fn vale_has_three_npcs() {
         let npcs = create_vale_npcs();
-        assert_eq!(npcs.len(), 3);
+        assert!(npcs.len() >= 3);
+    }
+
+    #[test]
+    fn vale_has_four_npcs() {
+        let npcs = create_vale_npcs();
+        assert_eq!(npcs.len(), 4);
     }
 
     #[test]
     fn per_scene_npc_creation() {
         use crate::SceneId;
         let vale = create_npcs_for_scene(SceneId::Vale);
-        assert_eq!(vale.len(), 3);
+        assert!(vale.len() >= 3);
         let forest = create_npcs_for_scene(SceneId::WildForest);
-        assert_eq!(forest.len(), 1);
+        assert_eq!(forest.len(), 2);
         let cave = create_npcs_for_scene(SceneId::Cave);
-        assert_eq!(cave.len(), 1);
+        assert_eq!(cave.len(), 2);
     }
 }

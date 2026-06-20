@@ -10,29 +10,6 @@ pub struct WindowConfig {
     pub fullscreen: bool,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn default_width_matches_constant() {
-        let cfg = WindowConfig::default();
-        assert!((cfg.width - constants::WINDOW_WIDTH).abs() < std::f32::EPSILON);
-    }
-
-    #[test]
-    fn default_height_matches_constant() {
-        let cfg = WindowConfig::default();
-        assert!((cfg.height - constants::WINDOW_HEIGHT).abs() < std::f32::EPSILON);
-    }
-
-    #[test]
-    fn default_fullscreen_is_false() {
-        let cfg = WindowConfig::default();
-        assert!(!cfg.fullscreen);
-    }
-}
-
 impl Default for WindowConfig {
     fn default() -> Self {
         Self {
@@ -40,5 +17,28 @@ impl Default for WindowConfig {
             height: constants::WINDOW_HEIGHT,
             fullscreen: false,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_width_matches_constant() {
+        let cfg = WindowConfig::default();
+        assert!((cfg.width - constants::WINDOW_WIDTH).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn default_height_matches_constant() {
+        let cfg = WindowConfig::default();
+        assert!((cfg.height - constants::WINDOW_HEIGHT).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn default_fullscreen_is_false() {
+        let cfg = WindowConfig::default();
+        assert!(!cfg.fullscreen);
     }
 }

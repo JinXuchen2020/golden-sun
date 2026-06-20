@@ -180,7 +180,7 @@ fn test_tilekind_color_returns_non_black_for_walkable_tiles() {
         TileKind::Snow, TileKind::Bridge, TileKind::Ice,
     ] {
         let c = kind.color();
-        assert!(c.r > 0.0 || c.g > 0.0 || c.b > 0.0, "{:?} color is black", kind);
+        assert!(c.r > 0.0 || c.g > 0.0 || c.b > 0.0, "{kind:?} color is black");
     }
 }
 

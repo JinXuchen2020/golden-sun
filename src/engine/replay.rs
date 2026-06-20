@@ -211,7 +211,7 @@ mod tests {
         mgr.start_playback();
         assert!(mgr.playing);
         assert!(mgr.current_frame().is_some());
-        assert_eq!(mgr.current_frame().unwrap().a, true);
+        assert!(mgr.current_frame().unwrap().a);
 
         mgr.advance_playback();
         assert!(mgr.current_frame().is_none()); // 超出范围

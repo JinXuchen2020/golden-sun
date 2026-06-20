@@ -91,6 +91,23 @@ fn generate_battle_theme() -> Vec<f32> {
     pcm
 }
 
+/// 生成 Boss 战斗 BGM 循环（低沉威胁感）
+fn generate_boss_bgm() -> Vec<f32> {
+    let sample_rate = 22050;
+    let duration = 8.0;
+    let num_samples = (sample_rate as f32 * duration) as usize;
+    let mut data = Vec::with_capacity(num_samples);
+    for i in 0..num_samples {
+        let t = i as f32 / sample_rate as f32;
+        let bass = (t * 110.0 * std::f32::consts::TAU).sin() * 0.4;
+        let alt = (t * 220.0 * std::f32::consts::TAU).sin() * 0.3;
+        let staccato = if (t * 4.0).fract() < 0.3 { 1.0 } else { 0.0 };
+        let sample = (bass + alt * staccato) * 0.5;
+        data.push(sample);
+    }
+    data
+}
+
 /// BGM 管理器
 pub struct BgmPlayer {
     sounds: HashMap<&'static str, Sound>,
@@ -103,6 +120,7 @@ impl BgmPlayer {
         let mut sounds = HashMap::new();
         sounds.insert("vale", load_audio(generate_vale_theme(), SAMPLE_RATE).await);
         sounds.insert("battle", load_audio(generate_battle_theme(), SAMPLE_RATE).await);
+        sounds.insert("boss", load_audio(generate_boss_bgm(), SAMPLE_RATE).await);
         Self { sounds, current: None }
     }
 
@@ -146,6 +164,11 @@ impl SfxManager {
         sounds.insert("hurt", generate_sfx_sound(180.0, 0.15, 0.6).await);
         sounds.insert("heal", generate_sfx_sound(660.0, 0.2, 0.4).await);
         sounds.insert("psynergy", generate_sfx_sound(550.0, 0.3, 0.5).await);
+        sounds.insert("levelup", generate_sfx_sound(880.0, 0.3, 0.5).await);
+        sounds.insert("shop_buy", generate_sfx_sound(660.0, 0.15, 0.4).await);
+        sounds.insert("victory", generate_sfx_sound(440.0, 0.5, 0.6).await);
+        sounds.insert("djinn", generate_sfx_sound(550.0, 0.25, 0.5).await);
+        sounds.insert("summon", generate_sfx_sound(330.0, 0.5, 0.7).await);
         Self { sounds }
     }
 

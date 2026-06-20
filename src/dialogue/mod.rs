@@ -18,6 +18,8 @@ pub struct DialogueState {
     total_chars: usize,
     /// 每个 char 的起始 byte 偏移缓存
     char_boundaries: Vec<usize>,
+    /// true = 过场用自动推进对话框，无需按 A
+    auto_close: bool,
 }
 
 impl DialogueState {
@@ -32,6 +34,22 @@ impl DialogueState {
             text,
             total_chars,
             char_boundaries,
+            auto_close: false,
+        }
+    }
+
+    pub fn new_full(text: String, auto_close: bool) -> Self {
+        let char_boundaries: Vec<usize> = text.char_indices().map(|(i, _)| i).collect();
+        let total_chars = char_boundaries.len();
+        Self {
+            visible_end: 0,
+            visible: 0,
+            timer: 0.0,
+            finished: false,
+            text,
+            total_chars,
+            char_boundaries,
+            auto_close,
         }
     }
 
@@ -81,6 +99,7 @@ impl DialogueState {
         self.visible_end = 0;
         self.timer = 0.0;
         self.finished = false;
+        self.auto_close = false;
     }
 }
 
@@ -109,6 +128,8 @@ pub enum DialogueAction {
     UnlockPsynergy(crate::PsynergyType),
     Teleport(f32, f32),
     StartBattle,
+    /// 打开商店界面（参数：NPC ID）
+    OpenShop(u32),
 }
 
 

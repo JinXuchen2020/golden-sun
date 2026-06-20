@@ -19,3 +19,4 @@ pub use frame_time::FrameTime;
 pub use game_state::{GameState, PsynergyAnim, TransitionKind};
 pub use input::{InputBus, InputEvent, InputState};
 pub use window_config::WindowConfig;
+pub use constants::ItemType;

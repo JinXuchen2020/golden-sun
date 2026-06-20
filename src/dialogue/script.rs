@@ -113,7 +113,7 @@ const IVAN_PAGE1_LINES: &[DialogueLine] = &[
 ];
 
 const IVAN_PAGE1_CHOICES: &[DialogueChoice] = &[
-    DialogueChoice { label: "看看商品", target_page: 1, require_flag: Some("met_ivan"), require_affinity: None, set_flag: None },
+    DialogueChoice { label: "看看商品", target_page: 1, require_flag: Some("met_ivan"), require_affinity: None, set_flag: Some("_open_shop") },
 ];
 
 const IVAN_PAGE2_TEXT: &str = "听说长老告诉了你关于精灵的事？\n确实，Vale 村自古就流传着这样的传说。\n山上的 Sol Sanctum 里封印着远古的力量…";
@@ -259,6 +259,151 @@ const GARRET_PAGE3_LINES: &[DialogueLine] = &[
     DialogueLine { text: GARRET_PAGE3_TEXT, actions: &[] },
 ];
 
+// ── Innkeeper NPC (stub) ──
+
+const INNKEEPER_PAGE1_TEXT: &str = "欢迎来到旅馆！一晚10金币，要休息一下吗？";
+const INNKEEPER_PAGE1_LINES: &[DialogueLine] = &[
+    DialogueLine { text: INNKEEPER_PAGE1_TEXT, actions: &[DialogueAction::SetFlag("met_innkeeper")] },
+];
+const INNKEEPER_PAGE1_CHOICES: &[DialogueChoice] = &[
+    DialogueChoice { label: "住宿 (10G)", target_page: 0, require_flag: None, require_affinity: None, set_flag: Some("_rest_at_inn") },
+    DialogueChoice { label: "不用了", target_page: 1, require_flag: None, require_affinity: None, set_flag: None },
+];
+const INNKEEPER_PAGE2_TEXT: &str = "好的，注意安全！";
+const INNKEEPER_PAGE2_LINES: &[DialogueLine] = &[
+    DialogueLine { text: INNKEEPER_PAGE2_TEXT, actions: &[] },
+];
+
+const IVAN_PAGE5_TEXT: &str = "你们要去 Bilibin？好选择。\n我年轻时去过一次，是个热闹的镇子。\n记得在路上的旅馆休息，山道很危险。";
+
+const IVAN_PAGE5_ACTIONS: &[DialogueAction] = &[
+    DialogueAction::SetFlag("ivan_travel_tip"),
+];
+
+const IVAN_PAGE5_LINES: &[DialogueLine] = &[
+    DialogueLine { text: IVAN_PAGE5_TEXT, actions: IVAN_PAGE5_ACTIONS },
+];
+
+const IVAN_PAGE6_TEXT: &str = "传说中，四个 Elemental Stars 分别藏在世界的四个角落。\n如果你真的找到了一个，那么剩下的三个也在呼唤你。\n世界之轮已经开始转动了…";
+
+const IVAN_PAGE6_ACTIONS: &[DialogueAction] = &[
+    DialogueAction::SetFlag("ivan_revealed_stars"),
+];
+
+const IVAN_PAGE6_LINES: &[DialogueLine] = &[
+    DialogueLine { text: IVAN_PAGE6_TEXT, actions: IVAN_PAGE6_ACTIONS },
+];
+
+const MIA_PAGE5_TEXT: &str = "池塘里的闪光…现在我知道那是精灵的力量了。\n也许我也能感受到它。\n保重，Isaac。";
+
+const MIA_PAGE5_ACTIONS: &[DialogueAction] = &[
+    DialogueAction::SetFlag("mia_farewell"),
+];
+
+const MIA_PAGE5_LINES: &[DialogueLine] = &[
+    DialogueLine { text: MIA_PAGE5_TEXT, actions: MIA_PAGE5_ACTIONS },
+];
+
+const MIA_PAGE6_TEXT: &str = "你收集到 Djinn 了！\n它们是很特别的精灵，只选择有缘人。\n看来你是真正的 Adept。";
+
+const MIA_PAGE6_ACTIONS: &[DialogueAction] = &[
+    DialogueAction::SetFlag("mia_djinn_talk"),
+];
+
+const MIA_PAGE6_LINES: &[DialogueLine] = &[
+    DialogueLine { text: MIA_PAGE6_TEXT, actions: MIA_PAGE6_ACTIONS },
+];
+
+const GARSMIN_PAGE8_TEXT: &str = "Elemental Star…你做到了。\n在圣祭坛沉睡了数百年的力量终于重现于世。\n你知道吗？传说中一共有四颗 Elemental Stars。\n每一颗都代表着一种元素力量。";
+
+const GARSMIN_PAGE8_ACTIONS: &[DialogueAction] = &[
+    DialogueAction::SetFlag("garsmin_revealed_stars"),
+];
+
+const GARSMIN_PAGE8_LINES: &[DialogueLine] = &[
+    DialogueLine { text: GARSMIN_PAGE8_TEXT, actions: GARSMIN_PAGE8_ACTIONS },
+];
+
+const GARSMIN_PAGE9_TEXT: &str = "数百年前，伟大的贤者们将炼金术封印在\n四颗 Elemental Stars 之中。\n你的祖先就是其中一位守护者。\n现在，这责任落在了你肩上。";
+
+const GARSMIN_PAGE9_ACTIONS: &[DialogueAction] = &[
+    DialogueAction::SetFlag("garsmin_ancestor"),
+];
+
+const GARSMIN_PAGE9_LINES: &[DialogueLine] = &[
+    DialogueLine { text: GARSMIN_PAGE9_TEXT, actions: GARSMIN_PAGE9_ACTIONS },
+];
+
+const GARSMIN_PAGE10_TEXT: &str = "离开 Vale 吧，孩子。\n世界在等待着你。\n记住——精灵的力量来自于内心，\n而不是来自于 Elemental Stars。";
+
+const GARSMIN_PAGE10_ACTIONS: &[DialogueAction] = &[
+    DialogueAction::SetFlag("garsmin_final_blessing"),
+];
+
+const GARSMIN_PAGE10_LINES: &[DialogueLine] = &[
+    DialogueLine { text: GARSMIN_PAGE10_TEXT, actions: GARSMIN_PAGE10_ACTIONS },
+];
+
+const GARRET_PAGE4_TEXT: &str = "长老说得对！我们该出发了。\n我已经准备好了，你呢？\nIsaac，一起闯荡世界吧！";
+
+const GARRET_PAGE4_ACTIONS: &[DialogueAction] = &[
+    DialogueAction::SetFlag("garet_ready_to_go"),
+];
+
+const GARRET_PAGE4_LINES: &[DialogueLine] = &[
+    DialogueLine { text: GARRET_PAGE4_TEXT, actions: GARRET_PAGE4_ACTIONS },
+];
+
+const GARRET_PAGE5_TEXT: &str = "哇，外面的空气真不一样！\n你看那边的森林，比 Vale 周围的茂密多了。\n我感觉我们很快就会遇到有趣的事！";
+
+const GARRET_PAGE5_ACTIONS: &[DialogueAction] = &[
+    DialogueAction::SetFlag("garet_excited"),
+];
+
+const GARRET_PAGE5_LINES: &[DialogueLine] = &[
+    DialogueLine { text: GARRET_PAGE5_TEXT, actions: GARRET_PAGE5_ACTIONS },
+];
+
+const HERMIT_PAGE1_TEXT: &str = "嘘…小点声，我在冥想。\n森林里住着许多古老的生灵，\n它们不喜欢被打扰。";
+
+const HERMIT_PAGE1_ACTIONS: &[DialogueAction] = &[
+    DialogueAction::SetFlag("met_hermit"),
+];
+
+const HERMIT_PAGE1_LINES: &[DialogueLine] = &[
+    DialogueLine { text: HERMIT_PAGE1_TEXT, actions: HERMIT_PAGE1_ACTIONS },
+];
+
+const HERMIT_PAGE2_TEXT: &str = "你身上有精灵力的气息…\n你是 Adept 吧？难怪森林对你这么友好。\n向东走有个洞穴，那里的能量很不稳定。";
+
+const HERMIT_PAGE2_ACTIONS: &[DialogueAction] = &[
+    DialogueAction::SetFlag("hermit_hint"),
+];
+
+const HERMIT_PAGE2_LINES: &[DialogueLine] = &[
+    DialogueLine { text: HERMIT_PAGE2_TEXT, actions: HERMIT_PAGE2_ACTIONS },
+];
+
+const PROSPECTOR_PAGE1_TEXT: &str = "嘿！你也是来挖宝的？\n别误会，这洞里没什么值钱的东西…\n不过据说深处有奇怪的光芒。";
+
+const PROSPECTOR_PAGE1_ACTIONS: &[DialogueAction] = &[
+    DialogueAction::SetFlag("met_prospector"),
+];
+
+const PROSPECTOR_PAGE1_LINES: &[DialogueLine] = &[
+    DialogueLine { text: PROSPECTOR_PAGE1_TEXT, actions: PROSPECTOR_PAGE1_ACTIONS },
+];
+
+const PROSPECTOR_PAGE2_TEXT: &str = "你要往深处走？那小心点。\n我听到过沉重的脚步声，像是有什么大家伙在睡觉。\n……也许你该带上些恢复药。";
+
+const PROSPECTOR_PAGE2_ACTIONS: &[DialogueAction] = &[
+    DialogueAction::SetFlag("prospector_warning"),
+];
+
+const PROSPECTOR_PAGE2_LINES: &[DialogueLine] = &[
+    DialogueLine { text: PROSPECTOR_PAGE2_TEXT, actions: PROSPECTOR_PAGE2_ACTIONS },
+];
+
 const NPC_SCRIPTS: &[(&str, &DialogueScript)] = &[
     ("garsmin", &DialogueScript {
         pages: &[
@@ -269,6 +414,9 @@ const NPC_SCRIPTS: &[(&str, &DialogueScript)] = &[
             DialoguePage { lines: GARSMIN_PAGE5_LINES, choices: &[] },
             DialoguePage { lines: GARSMIN_PAGE6_LINES, choices: &[] },
             DialoguePage { lines: GARSMIN_PAGE7_LINES, choices: &[] },
+            DialoguePage { lines: GARSMIN_PAGE8_LINES, choices: &[] },
+            DialoguePage { lines: GARSMIN_PAGE9_LINES, choices: &[] },
+            DialoguePage { lines: GARSMIN_PAGE10_LINES, choices: &[] },
         ],
         start_flag: Some("talked_to_garsmin"),
     }),
@@ -278,6 +426,12 @@ const NPC_SCRIPTS: &[(&str, &DialogueScript)] = &[
             DialoguePage { lines: IVAN_PAGE2_LINES, choices: &[] },
             DialoguePage { lines: IVAN_PAGE3_LINES, choices: &[] },
             DialoguePage { lines: IVAN_PAGE4_LINES, choices: &[] },
+            DialoguePage { lines: IVAN_PAGE5_LINES, choices: &[
+                DialogueChoice { label: "继续说", target_page: 5, require_flag: Some("garet_ready"), require_affinity: None, set_flag: None },
+            ]},
+            DialoguePage { lines: IVAN_PAGE6_LINES, choices: &[
+                DialogueChoice { label: "继续说", target_page: 0, require_flag: Some("ivan_travel_tip"), require_affinity: None, set_flag: None },
+            ]},
         ],
         start_flag: Some("talked_to_ivan"),
     }),
@@ -287,6 +441,12 @@ const NPC_SCRIPTS: &[(&str, &DialogueScript)] = &[
             DialoguePage { lines: MIA_PAGE2_LINES, choices: &[] },
             DialoguePage { lines: MIA_PAGE3_LINES, choices: &[] },
             DialoguePage { lines: MIA_PAGE4_LINES, choices: &[] },
+            DialoguePage { lines: MIA_PAGE5_LINES, choices: &[
+                DialogueChoice { label: "继续说", target_page: 0, require_flag: Some("completed_sol_sanctum"), require_affinity: None, set_flag: None },
+            ]},
+            DialoguePage { lines: MIA_PAGE6_LINES, choices: &[
+                DialogueChoice { label: "继续说", target_page: 0, require_flag: Some("mia_farewell"), require_affinity: None, set_flag: None },
+            ]},
         ],
         start_flag: Some("talked_to_mia"),
     }),
@@ -295,8 +455,35 @@ const NPC_SCRIPTS: &[(&str, &DialogueScript)] = &[
             DialoguePage { lines: GARRET_PAGE1_LINES, choices: &[] },
             DialoguePage { lines: GARRET_PAGE2_LINES, choices: &[] },
             DialoguePage { lines: GARRET_PAGE3_LINES, choices: &[] },
+            DialoguePage { lines: GARRET_PAGE4_LINES, choices: &[
+                DialogueChoice { label: "继续说", target_page: 0, require_flag: Some("garsmin_final_blessing"), require_affinity: None, set_flag: None },
+            ]},
+            DialoguePage { lines: GARRET_PAGE5_LINES, choices: &[
+                DialogueChoice { label: "继续说", target_page: 0, require_flag: Some("garet_ready_to_go"), require_affinity: None, set_flag: None },
+            ]},
         ],
         start_flag: Some("talked_to_garet"),
+    }),
+    ("innkeeper", &DialogueScript {
+        pages: &[
+            DialoguePage { lines: INNKEEPER_PAGE1_LINES, choices: INNKEEPER_PAGE1_CHOICES },
+            DialoguePage { lines: INNKEEPER_PAGE2_LINES, choices: &[] },
+        ],
+        start_flag: Some("talked_to_innkeeper"),
+    }),
+    ("forest_hermit", &DialogueScript {
+        pages: &[
+            DialoguePage { lines: HERMIT_PAGE1_LINES, choices: &[] },
+            DialoguePage { lines: HERMIT_PAGE2_LINES, choices: &[] },
+        ],
+        start_flag: Some("talked_to_hermit"),
+    }),
+    ("cave_prospector", &DialogueScript {
+        pages: &[
+            DialoguePage { lines: PROSPECTOR_PAGE1_LINES, choices: &[] },
+            DialoguePage { lines: PROSPECTOR_PAGE2_LINES, choices: &[] },
+        ],
+        start_flag: Some("talked_to_prospector"),
     }),
 ];
 
@@ -305,46 +492,106 @@ mod tests {
     use super::*;
 
     #[test]
-    fn ivan_script_has_four_pages() {
+    fn ivan_script_has_six_pages() {
         let s = get_script("ivan").unwrap();
-        assert_eq!(s.page_count(), 4);
+        assert_eq!(s.page_count(), 6);
         assert_eq!(s.pages[0].lines.len(), 1);
     }
 
     #[test]
-    fn mia_script_has_four_pages() {
+    fn mia_script_has_six_pages() {
         let s = get_script("mia").unwrap();
-        assert_eq!(s.page_count(), 4);
+        assert_eq!(s.page_count(), 6);
         assert_eq!(s.pages[0].lines.len(), 1);
     }
 
     #[test]
-    fn garsmin_script_has_seven_pages() {
+    fn garsmin_script_has_ten_pages() {
         let s = get_script("garsmin").unwrap();
-        assert_eq!(s.page_count(), 7);
+        assert_eq!(s.page_count(), 10);
         assert_eq!(s.pages[0].lines.len(), 1);
     }
 
     #[test]
-    fn garet_script_exists() {
+    fn garet_script_has_five_pages() {
         let s = get_script("garet").unwrap();
-        assert_eq!(s.page_count(), 3);
+        assert_eq!(s.page_count(), 5);
         assert_eq!(s.pages[0].lines.len(), 1);
     }
 
     #[test]
-    fn garet_page1_sets_met_garet() {
-        let s = get_script("garet").unwrap();
-        let line = &s.pages[0].lines[0];
-        assert_eq!(line.actions.len(), 1);
-        assert_eq!(line.actions[0], DialogueAction::SetFlag("met_garet"));
-    }
-
-    #[test]
-    fn garet_page2_requires_met_garsmin() {
+    fn garet_page2_sets_garet_ready() {
         let s = get_script("garet").unwrap();
         assert_eq!(s.pages[1].lines[0].actions.len(), 1);
         assert_eq!(s.pages[1].lines[0].actions[0], DialogueAction::SetFlag("garet_ready"));
+    }
+
+    #[test]
+    fn ivan_page5_sets_travel_tip() {
+        let s = get_script("ivan").unwrap();
+        assert_eq!(s.pages[4].lines[0].actions[0], DialogueAction::SetFlag("ivan_travel_tip"));
+    }
+
+    #[test]
+    fn ivan_page6_sets_revealed_stars() {
+        let s = get_script("ivan").unwrap();
+        assert_eq!(s.pages[5].lines[0].actions[0], DialogueAction::SetFlag("ivan_revealed_stars"));
+    }
+
+    #[test]
+    fn mia_page5_sets_farewell() {
+        let s = get_script("mia").unwrap();
+        assert_eq!(s.pages[4].lines[0].actions[0], DialogueAction::SetFlag("mia_farewell"));
+    }
+
+    #[test]
+    fn mia_page6_sets_djinn_talk() {
+        let s = get_script("mia").unwrap();
+        assert_eq!(s.pages[5].lines[0].actions[0], DialogueAction::SetFlag("mia_djinn_talk"));
+    }
+
+    #[test]
+    fn garsmin_page8_sets_revealed_stars() {
+        let s = get_script("garsmin").unwrap();
+        assert_eq!(s.pages[7].lines[0].actions[0], DialogueAction::SetFlag("garsmin_revealed_stars"));
+    }
+
+    #[test]
+    fn garsmin_page9_sets_ancestor() {
+        let s = get_script("garsmin").unwrap();
+        assert_eq!(s.pages[8].lines[0].actions[0], DialogueAction::SetFlag("garsmin_ancestor"));
+    }
+
+    #[test]
+    fn garsmin_page10_sets_final_blessing() {
+        let s = get_script("garsmin").unwrap();
+        assert_eq!(s.pages[9].lines[0].actions[0], DialogueAction::SetFlag("garsmin_final_blessing"));
+    }
+
+    #[test]
+    fn garet_page4_sets_ready_to_go() {
+        let s = get_script("garet").unwrap();
+        assert_eq!(s.pages[3].lines[0].actions[0], DialogueAction::SetFlag("garet_ready_to_go"));
+    }
+
+    #[test]
+    fn garet_page5_sets_excited() {
+        let s = get_script("garet").unwrap();
+        assert_eq!(s.pages[4].lines[0].actions[0], DialogueAction::SetFlag("garet_excited"));
+    }
+
+    #[test]
+    fn forest_hermit_script_exists() {
+        let s = get_script("forest_hermit").unwrap();
+        assert_eq!(s.page_count(), 2);
+        assert_eq!(s.start_flag, Some("talked_to_hermit"));
+    }
+
+    #[test]
+    fn cave_prospector_script_exists() {
+        let s = get_script("cave_prospector").unwrap();
+        assert_eq!(s.page_count(), 2);
+        assert_eq!(s.start_flag, Some("talked_to_prospector"));
     }
 
     #[test]

@@ -10,6 +10,7 @@ pub mod djinn;
 pub mod quest;
 pub mod loader;
 pub mod summon;
+pub mod cutscene;
 
 use std::collections::HashMap;
 
@@ -18,37 +19,39 @@ use std::collections::HashMap;
 pub struct EnemyConfig {
     pub name: &'static str,
     pub level: u32,
+    pub display_name: &'static str,
+    pub description: &'static str,
 }
 
 /// 获取指定区域的敌人编队
 pub fn enemies_for_area(area: &str) -> Vec<EnemyConfig> {
     match area {
         "Vale" => vec![
-            EnemyConfig { name: "Wolf", level: 3 },
-            EnemyConfig { name: "Bat", level: 2 },
-            EnemyConfig { name: "Goblin", level: 4 },
+            EnemyConfig { name: "Wolf", level: 3, display_name: "野狼", description: "山脚常见的野兽" },
+            EnemyConfig { name: "Bat", level: 2, display_name: "蝙蝠", description: "洞穴中成群出没" },
+            EnemyConfig { name: "Goblin", level: 4, display_name: "哥布林", description: "喜欢恶作剧的小妖怪" },
         ],
         "WildForest" => vec![
-            EnemyConfig { name: "Wolf", level: 4 },
-            EnemyConfig { name: "Spider", level: 3 },
-            EnemyConfig { name: "Goblin", level: 5 },
-            EnemyConfig { name: "Treant", level: 6 },
-            EnemyConfig { name: "Slime", level: 2 },
+            EnemyConfig { name: "Wolf", level: 4, display_name: "野狼", description: "" },
+            EnemyConfig { name: "Spider", level: 3, display_name: "毒蜘蛛", description: "森林深处的危险生物" },
+            EnemyConfig { name: "Goblin", level: 5, display_name: "哥布林", description: "" },
+            EnemyConfig { name: "Treant", level: 6, display_name: "树精", description: "古老森林的守护者" },
+            EnemyConfig { name: "Slime", level: 2, display_name: "史莱姆", description: "元素凝聚成的软体生物" },
         ],
         "Cave" => vec![
-            EnemyConfig { name: "Bat", level: 3 },
-            EnemyConfig { name: "Golem", level: 7 },
-            EnemyConfig { name: "Spider", level: 5 },
-            EnemyConfig { name: "Ghost", level: 6 },
-            EnemyConfig { name: "RatKing", level: 8 },
+            EnemyConfig { name: "Bat", level: 3, display_name: "蝙蝠", description: "" },
+            EnemyConfig { name: "Golem", level: 7, display_name: "石巨人", description: "洞穴深处的岩石守卫" },
+            EnemyConfig { name: "Spider", level: 5, display_name: "毒蜘蛛", description: "" },
+            EnemyConfig { name: "Ghost", level: 6, display_name: "幽灵", description: "游荡在黑暗中的灵体" },
+            EnemyConfig { name: "RatKing", level: 8, display_name: "鼠王", description: "洞穴鼠群的统帅" },
         ],
         "SolSanctum" => vec![
-            EnemyConfig { name: "MythrilGolem", level: 10 },
-            EnemyConfig { name: "AncientGuard", level: 9 },
+            EnemyConfig { name: "MythrilGolem", level: 10, display_name: "密银巨像", description: "圣祭坛的远古守卫" },
+            EnemyConfig { name: "AncientGuard", level: 9, display_name: "古代守卫", description: "迷途者的灵魂被赋予了形体" },
         ],
         _ => vec![
-            EnemyConfig { name: "Wolf", level: 3 },
-            EnemyConfig { name: "Bat", level: 2 },
+            EnemyConfig { name: "Wolf", level: 3, display_name: "野狼", description: "" },
+            EnemyConfig { name: "Bat", level: 2, display_name: "蝙蝠", description: "" },
         ],
     }
 }

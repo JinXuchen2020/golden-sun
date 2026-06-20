@@ -100,7 +100,7 @@ fn each_tile_has_unique_color() {
         (PushBlock, Ice),
     ];
     for (a, b) in &pairs {
-        assert_ne!(a.color(), b.color(), "Tile {:?} and {:?} have the same color!", a, b);
+        assert_ne!(a.color(), b.color(), "Tile {a:?} and {b:?} have the same color!");
     }
 
     // 没有黑色（除 Void 外）
@@ -111,7 +111,7 @@ fn each_tile_has_unique_color() {
         let col = t.color();
         assert!(
             col.r > 0.0 || col.g > 0.0 || col.b > 0.0,
-            "Tile {:?} has black color", t
+            "Tile {t:?} has black color"
         );
     }
 }

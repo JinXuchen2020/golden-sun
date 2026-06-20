@@ -1,0 +1,67 @@
+﻿cargo :    Compiling golden-sun v0.1.0 (F:\AI_Projects\golden-sun)
+所在位置 行:1 字符: 1
++ cargo build 2>&1 | Out-File -FilePath "F:\AI_Projects\golden-sun\buil ...
++ ~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (   Compiling go...cts\golden-sun):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+warning: unused import: `super::ItemType`
+ --> src\game\update.rs:3:5
+  |
+3 | use super::ItemType;
+  |     ^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `all_cutscenes`
+  --> src\game\update.rs:17:34
+   |
+17 | use golden_sun::data::cutscene::{all_cutscenes, OPENING_CUTSCENE};
+   |                                  ^^^^^^^^^^^^^
+
+error[E0507]: cannot move out of `self.state.equipment_for_sale` as enum variant `Shop` which is behind a mutable refer
+ence
+   --> src\game\update.rs:87:15
+    |
+87  |         match self.state {
+    |               ^^^^^^^^^^
+...
+524 |             GameState::Shop { npc_id, equipment_for_sale, items_for_sale, selection,
+    |                                       ------------------  -------------- ...and here
+    |                                       |
+    |                                       data moved here
+525 |                 tab, sell_selection, mut message, mut message_timer } =>
+    |                                      ----------- ...and here
+    |
+    = note: move occurs because these variables have types that don't implement the `Copy` trait
+help: consider borrowing here
+    |
+87  |         match &self.state {
+    |               +
+
+error[E0502]: cannot borrow `*self` as mutable because it is also borrowed as immutable
+  --> src\game\draw.rs:58:17
+   |
+16 |         match &self.state {
+   |               ----------- immutable borrow occurs here
+...
+58 |                 self.draw_world_map();
+   |                 ^^^^^^^^^^^^^^^^^^^^^ mutable borrow occurs here
+59 |                 self.draw_djinn_menu(*selection, *page, *character_select);
+   |                                      ---------- immutable borrow later used here
+
+error[E0502]: cannot borrow `*self` as mutable because it is also borrowed as immutable
+  --> src\game\draw.rs:73:17
+   |
+16 |         match &self.state {
+   |               ----------- immutable borrow occurs here
+...
+73 |                 self.draw_world_map();
+   |                 ^^^^^^^^^^^^^^^^^^^^^ mutable borrow occurs here
+74 |                 golden_sun::ui::draw_transition(*timer, *kind);
+   |                                                         ----- immutable borrow later used here
+
+Some errors have detailed explanations: E0502, E0507.
+For more information about an error, try `rustc --explain E0502`.
+warning: `golden-sun` (bin "golden-sun") generated 2 warnings
+error: could not compile `golden-sun` (bin "golden-sun") due to 3 previous errors; 2 warnings emitted

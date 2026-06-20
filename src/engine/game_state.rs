@@ -2,6 +2,7 @@
 
 use crate::PsynergyType;
 use crate::dialogue::script::{DialogueChoice, DialogueScript};
+use crate::ItemType;
 
 /// 过渡动画类型
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -63,6 +64,54 @@ pub enum GameState {
     DjinnMenu { selection: usize, page: usize, character_select: u32 },
     /// 升级动画状态
     LevelUp { old_level: u32, new_level: u32, timer: f32 },
+    /// 过场动画 — 脚本化的叙事序列
+    Cutscene {
+        /// 过场 ID
+        id: &'static str,
+        /// 已执行的步骤索引
+        step: usize,
+        /// 总步骤数
+        total_steps: usize,
+        /// 当前步骤的内部计时器
+        timer: f32,
+    },
+    /// 场景名称弹窗 — 进入新场景时显示
+    SceneName {
+        name: &'static str,
+        timer: f32,
+    },
+    /// 旅馆/恢复界面
+    Inn {
+        cost: u32,
+        timer: f32,
+        restored: bool,
+    },
+    /// Djinn 收集动画 — 显示获得的 Djinn 名称和元素颜色
+    DjinnObtained {
+        djinn_id: u32,
+        name: &'static str,
+        element_color: (f32, f32, f32),
+        timer: f32,
+    },
+    /// 商店界面 — 购买/出售装备和道具
+    Shop {
+        npc_id: u32,
+        equipment_for_sale: Vec<usize>,
+        items_for_sale: Vec<ItemType>,
+        selection: usize,
+        tab: usize,
+        sell_selection: usize,
+        message: String,
+        message_timer: f32,
+    },
+    /// 战斗动作选择子菜单
+    BattleMenu {
+        selection: usize,
+    },
+    /// 战斗道具选择子菜单
+    BattleItemSelect {
+        selection: usize,
+    },
 }
 
 impl GameState {

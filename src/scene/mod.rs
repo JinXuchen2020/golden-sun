@@ -14,6 +14,18 @@ pub enum SceneId {
     SolSanctum,
 }
 
+impl SceneId {
+    pub fn display_name(&self) -> &'static str {
+        match self {
+            SceneId::Title => "标题画面",
+            SceneId::Vale => "Vale 村",
+            SceneId::WildForest => "密林",
+            SceneId::Cave => "洞穴",
+            SceneId::SolSanctum => "Sol Sanctum",
+        }
+    }
+}
+
 /// 场景注册表 — 管理场景切换、加载和资源生命周期
 ///
 /// 骨架实现，Phase 1 填充具体逻辑。

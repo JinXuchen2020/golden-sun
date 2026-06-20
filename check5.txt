@@ -1,0 +1,152 @@
+﻿cargo :     Checking golden-sun v0.1.0 (F:\AI_Projects\golden-sun)
+所在位置 行:1 字符: 1
++ cargo check 2>&1 | Out-File -FilePath "F:\AI_Projects\golden-sun\chec ...
++ ~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (    Checking go...cts\golden-sun):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+warning: unused import: `super::ItemType`
+ --> src\game\update.rs:3:5
+  |
+3 | use super::ItemType;
+  |     ^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `all_cutscenes`
+  --> src\game\update.rs:17:34
+   |
+17 | use golden_sun::data::cutscene::{all_cutscenes, OPENING_CUTSCENE};
+   |                                  ^^^^^^^^^^^^^
+
+warning: unused import: `ItemType`
+ --> src\game\draw.rs:1:35
+  |
+1 | use super::{GameCtx, SpriteAtlas, ItemType};
+  |                                   ^^^^^^^^
+
+warning: unreachable pattern
+   --> src\game\update.rs:631:37
+    |
+631 | ...                   _ => 0,
+    |                       ^ no value can reach this
+    |
+note: multiple earlier patterns match some of the same values
+   --> src\game\update.rs:631:37
+    |
+628 | ...                   super::ItemType::Potion => 7,
+    |                       ----------------------- matches some of the same values
+629 | ...                   super::ItemType::Ether => 10,
+    |                       ---------------------- matches some of the same values
+630 | ...                   super::ItemType::GoldRing => 50,
+    |                       ------------------------- matches some of the same values
+631 | ...                   _ => 0,
+    |                       ^ collectively making this unreachable
+    = note: `#[warn(unreachable_patterns)]` on by default
+
+warning: unused variable: `npc_id`
+   --> src\game\update.rs:524:31
+    |
+524 |             GameState::Shop { ref mut npc_id, ref equipment_for_sale, ref items_for_sale, ref mut selection,
+    |                               ^^^^^^^^^^^^^^ help: try ignoring the field: `npc_id: _`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+error[E0502]: cannot borrow `*self` as immutable because it is also borrowed as mutable
+   --> src\game\update.rs:537:21
+    |
+524 |             GameState::Shop { ref mut npc_id, ref equipment_for_sale, ref items_for_sale, ref mut selection,
+    |                                                                                           ----------------- mutab
+le borrow occurs here
+...
+537 |                     self.play_sfx("cancel");
+    |                     ^^^^ immutable borrow occurs here
+...
+541 |                     *selection = 0;
+    |                     -------------- mutable borrow later used here
+
+error[E0502]: cannot borrow `*self` as immutable because it is also borrowed as mutable
+   --> src\game\update.rs:543:21
+    |
+524 |             GameState::Shop { ref mut npc_id, ref equipment_for_sale, ref items_for_sale, ref mut selection,
+    |                                                                                           ----------------- mutab
+le borrow occurs here
+...
+543 |                     self.play_sfx("cancel");
+    |                     ^^^^ immutable borrow occurs here
+...
+549 |                         *selection = selection.saturating_sub(1);
+    |                                      --------- mutable borrow later used here
+
+error[E0502]: cannot borrow `*self` as immutable because it is also borrowed as mutable
+   --> src\game\update.rs:553:21
+    |
+524 |             GameState::Shop { ref mut npc_id, ref equipment_for_sale, ref items_for_sale, ref mut selection,
+    |                                                                                           ----------------- mutab
+le borrow occurs here
+...
+553 |                     self.play_sfx("cancel");
+    |                     ^^^^ immutable borrow occurs here
+...
+558 |                         *selection = (*selection + 1).min(max_items.saturating_sub(1));
+    |                                       ---------- mutable borrow later used here
+
+error[E0502]: cannot borrow `*self` as immutable because it is also borrowed as mutable
+   --> src\game\update.rs:562:21
+    |
+524 |             GameState::Shop { ref mut npc_id, ref equipment_for_sale, ref items_for_sale, ref mut selection,
+    |                                                                                           ----------------- mutab
+le borrow occurs here
+...
+562 |                     self.play_sfx("cancel");
+    |                     ^^^^ immutable borrow occurs here
+...
+572 |                             if *tab == 0 && *selection < eq_count {
+    |                                             ---------- mutable borrow later used here
+
+error[E0499]: cannot borrow `*self` as mutable more than once at a time
+   --> src\game\update.rs:578:41
+    |
+525 |                 ref mut tab, ref mut sell_selection, ref mut message, ref mut message_timer } =>
+    |                                                      --------------- first mutable borrow occurs here
+...
+578 |                                         self.equip_item(eqs[eq_idx].slot, eq_idx);
+    |                                         ^^^^ second mutable borrow occurs here
+579 |                                         *message = "璐拱鎴愬姛锛?.into();
+    |                                         -------- first borrow later used here
+
+error[E0502]: cannot borrow `*self` as immutable because it is also borrowed as mutable
+   --> src\game\update.rs:666:25
+    |
+659 |             GameState::Inn { ref mut timer, ref mut restored, cost: _ } => {
+    |                              ------------- mutable borrow occurs here
+...
+666 |                         self.play_sfx("heal");
+    |                         ^^^^ immutable borrow occurs here
+667 |                     }
+668 |                     if *timer >= 2.0 {
+    |                        ------ mutable borrow later used here
+
+error[E0507]: cannot move out of `self.state.equipment_for_sale` as enum variant `Shop` which is behind a mutable refer
+ence
+  --> src\game\draw.rs:16:15
+   |
+16 |         match self.state {
+   |               ^^^^^^^^^^
+...
+71 |             GameState::Shop { npc_id, equipment_for_sale, items_for_sale, selection, tab, sell_selection, ref mess
+age, .. } => {
+   |                                       ------------------  -------------- ...and here
+   |                                       |
+   |                                       data moved here
+   |
+   = note: move occurs because these variables have types that don't implement the `Copy` trait
+help: consider borrowing here
+   |
+16 |         match &self.state {
+   |               +
+
+Some errors have detailed explanations: E0499, E0502, E0507.
+For more information about an error, try `rustc --explain E0499`.
+warning: `golden-sun` (bin "golden-sun") generated 5 warnings
+error: could not compile `golden-sun` (bin "golden-sun") due to 7 previous errors; 5 warnings emitted
