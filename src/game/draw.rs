@@ -51,6 +51,10 @@ impl GameCtx {
                 self.draw_battle();
                 self.draw_battle_item_select(&sel);
             }
+            GameState::BattleSummonSelect { selection: sel } => {
+                self.draw_battle();
+                self.draw_summon_submenu(&sel);
+            }
             GameState::Menu => {
                 self.draw_world_map();
                 self.draw_menu();
@@ -104,12 +108,38 @@ impl GameCtx {
                     draw_text(name, RENDER_TARGET_W as f32 / 2.0 - 60.0, 100.0, 24.0, color);
                 }
             }
+            GameState::GameOver { timer, has_save } => {
+                let alpha = (timer / 2.0).min(1.0);
+                draw_rectangle(0.0, 0.0, RENDER_TARGET_W as f32, RENDER_TARGET_H as f32,
+                    Color::from_rgba(80, 0, 0, (alpha * 200.0) as u8));
+
+                if timer > 0.5 {
+                    let text_alpha = ((timer - 0.5) / 1.5).min(1.0) * 255.0;
+                    let color = Color::new(255.0, 50.0, 50.0, text_alpha / 255.0);
+                    draw_text("GAME OVER", RENDER_TARGET_W as f32 / 2.0 - 60.0,
+                        RENDER_TARGET_H as f32 / 2.0 - 20.0, 32.0, color);
+                }
+
+                if timer >= 2.0 {
+                    let blink = (self.game_time * 3.0).sin().abs();
+                    let prompt_alpha = (blink * 128.0 + 127.0) as u8;
+                    let prompt_color = Color::new(200.0, 200.0, 200.0, prompt_alpha as f32 / 255.0);
+                    if has_save {
+                        draw_text("[A] 从存档继续  [B] 返回标题", RENDER_TARGET_W as f32 / 2.0 - 100.0,
+                            RENDER_TARGET_H as f32 / 2.0 + 30.0, 14.0, prompt_color);
+                    } else {
+                        draw_text("[B] 返回标题", RENDER_TARGET_W as f32 / 2.0 - 40.0,
+                            RENDER_TARGET_H as f32 / 2.0 + 30.0, 14.0, prompt_color);
+                    }
+                }
+            }
             _ => self.draw_placeholder(),
         }
     }
 
     fn draw_title(&self) {
-        golden_sun::ui::draw_title_screen();
+        let has_save = self._storage.exists("save");
+        golden_sun::ui::draw_title_enhanced(self.game_time, has_save);
     }
 
     fn draw_placeholder(&self) {
@@ -136,6 +166,50 @@ impl GameCtx {
 
         // 天气粒子渲染
         self.particles.draw();
+
+        // 森林场景落叶粒子
+        if self.scene.current() == SceneId::KolimaForest
+            && self.particles.count_by_kind(golden_sun::engine::particle::ParticleKind::Leaf) < 30
+        {
+            let leaves = golden_sun::engine::particle::generate_leaf_particles(3);
+            for leaf in leaves {
+                self.particles.push_particle(leaf);
+            }
+        }
+
+        // Djinn 拾取附近的闪光粒子
+        self.draw_djinn_hints();
+        let px = self.camera.x.floor();
+        let py = self.camera.y.floor();
+        for entry in djinn::world_djinn() {
+            let djinn_id = entry.0;
+            let scene_name = entry.1;
+            let tx = entry.2;
+            let ty = entry.3;
+            let current_name = match self.scene.current() {
+                SceneId::Vale => "Vale",
+                SceneId::WildForest => "WildForest",
+                SceneId::Bilibin => "Bilibin",
+                SceneId::KolimaForest => "KolimaForest",
+                SceneId::Cave => "Cave",
+                SceneId::SolSanctum => "SolSanctum",
+                _ => "",
+            };
+            if scene_name != current_name { continue; }
+            let collected = self.collected_djinn.iter().any(|d| d.djinn.id.as_str() == djinn_id.as_str());
+            if collected { continue; }
+            let dist_sq = (px - tx).powi(2) + (py - ty).powi(2);
+            if dist_sq < 9.0
+                && self.particles.count_by_kind(golden_sun::engine::particle::ParticleKind::Sparkle) < 10
+            {
+                let sparkles = golden_sun::engine::particle::generate_sparkle_particles(2);
+                for mut sparkle in sparkles {
+                    sparkle.x = (tx + 0.5) * constants::TILE_SIZE;
+                    sparkle.y = (ty + 0.5) * constants::TILE_SIZE;
+                    self.particles.push_particle(sparkle);
+                }
+            }
+        }
 
         self.render_npcs();
         self.draw_djinn_hints();
@@ -679,6 +753,8 @@ impl GameCtx {
             let loc_name = match self.scene.current() {
                 golden_sun::SceneId::Vale => "Vale Village",
                 golden_sun::SceneId::WildForest => "Wild Forest",
+                golden_sun::SceneId::Bilibin => "Bilibin Town",
+                golden_sun::SceneId::KolimaForest => "Kolima Forest",
                 golden_sun::SceneId::Cave => "Dark Cave",
                 golden_sun::SceneId::SolSanctum => "Sol Sanctum",
                 _ => "Unknown",
@@ -744,6 +820,8 @@ impl GameCtx {
         let (r, g, b) = match scene {
             SceneId::Vale => (0.1, 0.3, 0.1),
             SceneId::WildForest => (0.05, 0.2, 0.05),
+            SceneId::Bilibin => (0.3, 0.3, 0.2),
+            SceneId::KolimaForest => (0.05, 0.25, 0.05),
             SceneId::Cave => (0.1, 0.1, 0.1),
             SceneId::SolSanctum => (0.2, 0.1, 0.3),
             _ => (0.1, 0.1, 0.2),
@@ -786,6 +864,43 @@ impl GameCtx {
             draw_text(format!("{prefix}{name} {count}"), 20.0, menu_y + 22.0 + i as f32 * 20.0, 16.0, color);
         }
         draw_text("Cancel: Back", 20.0, menu_y + 100.0, 12.0, GRAY);
+    }
+
+    fn draw_summon_submenu(&self, selection: &usize) {
+        use golden_sun::data::summon::all_summons;
+        let summons = all_summons();
+        let menu_y = 340.0;
+        draw_rectangle(0.0, menu_y, 300.0, 140.0, Color::from_rgba(0, 0, 0, 200));
+        draw_text("-- Summons --", 20.0, menu_y + 2.0, 16.0, YELLOW);
+
+        let standby = if let Some(ref battle) = self.battle {
+            battle.collect_standby_djinn_count(&self.collected_djinn)
+        } else {
+            0
+        };
+
+        for (i, summon) in summons.iter().enumerate() {
+            let y = menu_y + 22.0 + i as f32 * 20.0;
+            if i >= 7 { break; }
+            let prefix = if i == *selection { "\u{25B8} " } else { "  " };
+            let color = if i == *selection { YELLOW } else { WHITE };
+            let can_use = standby >= summon.djinn_required as usize;
+            let elem_color = match summon.element {
+                golden_sun::Element::Venus => Color::from_rgba(100, 200, 100, 255),
+                golden_sun::Element::Mercury => Color::from_rgba(100, 150, 255, 255),
+                golden_sun::Element::Mars => Color::from_rgba(255, 100, 100, 255),
+                golden_sun::Element::Jupiter => Color::from_rgba(200, 200, 100, 255),
+            };
+            let status = if can_use { "" } else { " [Need more Djinn]" };
+            let display_color = if can_use { color } else { GRAY };
+            draw_text(format!("{prefix}{}", summon.name), 20.0, y, 14.0, display_color);
+            draw_text(format!("PP:{} Djinn:{}", summon.pp_cost, summon.djinn_required), 180.0, y, 10.0, elem_color);
+            if !status.is_empty() && !can_use {
+                draw_text(status, 320.0, y, 10.0, RED);
+            }
+        }
+        draw_text(format!("Standby Djinn: {standby}"), 20.0, menu_y + 125.0, 10.0, LIGHTGRAY);
+        draw_text("Cancel: Back", 20.0, menu_y + 130.0, 10.0, GRAY);
     }
 
     fn calculate_battle_grade(battle: &golden_sun::battle::Battle) -> &'static str {
@@ -886,6 +1001,9 @@ impl GameCtx {
                         ItemType::Potion => 15,
                         ItemType::Ether => 20,
                         ItemType::GoldRing => 100,
+                        ItemType::Elixir => 500,
+                        ItemType::Antidote => 50,
+                        ItemType::Nut => 100,
                     };
                     let color = if self.gold < price { DARKGRAY } else if selected { YELLOW } else { WHITE };
                     draw_text(item_type.name(), 40.0, y + 12.0, 12.0, color);
@@ -1010,6 +1128,8 @@ impl GameCtx {
             let current_name = match current {
                 SceneId::Vale => "Vale",
                 SceneId::WildForest => "WildForest",
+                SceneId::Bilibin => "Bilibin",
+                SceneId::KolimaForest => "KolimaForest",
                 SceneId::Cave => "Cave",
                 SceneId::SolSanctum => "SolSanctum",
                 _ => "",

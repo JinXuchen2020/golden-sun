@@ -33,9 +33,10 @@ fn branch_dialogue_selection() {
                     DialogueChoice { label: "选 A", target_page: 1, require_flag: None, require_affinity: None, set_flag: Some("chose_a") },
                     DialogueChoice { label: "选 B", target_page: 2, require_flag: None, require_affinity: None, set_flag: Some("chose_b") },
                 ],
+                require_flags: &[],
             },
-            DialoguePage { lines: &[DialogueLine { text: "你选了 A", actions: &[] }], choices: &[] },
-            DialoguePage { lines: &[DialogueLine { text: "你选了 B", actions: &[] }], choices: &[] },
+            DialoguePage { lines: &[DialogueLine { text: "你选了 A", actions: &[] }], choices: &[], require_flags: &[] },
+            DialoguePage { lines: &[DialogueLine { text: "你选了 B", actions: &[] }], choices: &[], require_flags: &[] },
         ],
         start_flag: None,
     };

@@ -31,6 +31,48 @@ impl Item {
     pub fn new(item_type: ItemType) -> Self {
         Self { item_type, count: 1 }
     }
+
+    #[allow(dead_code)]
+    pub fn use_on_player(&mut self, player: &mut PlayerStats, pp: &mut u32, max_pp: u32) -> String {
+        match self.item_type {
+            ItemType::Potion => {
+                let heal = 30u32;
+                player.hp = (player.hp + heal).min(player.max_hp);
+                self.consume();
+                "恢复了30 HP！".to_string()
+            }
+            ItemType::Ether => {
+                let recover = 10u32;
+                *pp = (*pp + recover).min(max_pp);
+                self.consume();
+                "恢复了10 PP！".to_string()
+            }
+            ItemType::GoldRing => {
+                self.consume();
+                "没有任何反应...".to_string()
+            }
+            ItemType::Elixir => {
+                player.hp = player.max_hp;
+                *pp = max_pp;
+                self.consume();
+                "HP和PP完全恢复了！".to_string()
+            }
+            ItemType::Antidote => {
+                self.consume();
+                "解毒成功！".to_string()
+            }
+            ItemType::Nut => {
+                player.attack += 1;
+                self.consume();
+                "攻击力永久提升了！".to_string()
+            }
+        }
+    }
+
+    #[allow(dead_code)]
+    fn consume(&mut self) {
+        self.count -= 1;
+    }
 }
 
 /// 玩家角色属性（含等级/EXP）
@@ -134,6 +176,11 @@ pub fn all_equipment() -> Vec<Equipment> {
         Equipment::new("守护戒指", EquipmentSlot::Accessory, 0, 5, 10, 80, "提升防御力和生命值"),
         Equipment::new("力量手环", EquipmentSlot::Accessory, 5, 0, 0, 150, "增强佩戴者的攻击力"),
         Equipment::new("精灵徽章", EquipmentSlot::Accessory, 3, 3, 15, 300, "共鸣着精灵能量的徽章"),
+        Equipment::new("破甲剑", EquipmentSlot::Weapon, 18, 0, 0, 600, "能穿透重甲的锋利长剑"),
+        Equipment::new("战斗斧", EquipmentSlot::Weapon, 20, 0, 5, 750, "沉重的战争斧头"),
+        Equipment::new("铁甲", EquipmentSlot::Armor, 0, 12, 15, 350, "坚固的铁制胸甲"),
+        Equipment::new("治愈戒指", EquipmentSlot::Accessory, 0, 3, 25, 400, "缓慢恢复HP的戒指"),
+        Equipment::new("力量腰带", EquipmentSlot::Accessory, 8, 0, 0, 350, "增强佩戴者力量的腰带"),
     ]
 }
 
@@ -146,6 +193,11 @@ pub fn shop_inventory(npc_id: u32) -> (Vec<usize>, Vec<ItemType>) {
         0 => (
             vec![0, 1, 2, 3, 4, 5, 6, 7],
             vec![ItemType::Potion, ItemType::Ether],
+        ),
+        // Bilibin 商人 — 更好的装备
+        21 => (
+            vec![2, 3, 6, 7, 9, 10, 11, 12, 13, 14, 15],
+            vec![ItemType::Potion, ItemType::Ether, ItemType::GoldRing],
         ),
         // 通用杂货店
         _ => (
@@ -417,6 +469,8 @@ impl GameCtx {
         let scene_name = match self.scene.current() {
             SceneId::Vale => "Vale",
             SceneId::WildForest => "WildForest",
+            SceneId::Bilibin => "Bilibin",
+            SceneId::KolimaForest => "KolimaForest",
             SceneId::Cave => "Cave",
             SceneId::SolSanctum => "SolSanctum",
             _ => "Vale",
@@ -461,6 +515,8 @@ impl GameCtx {
             scene: match self.scene.current() {
                 golden_sun::SceneId::Vale => "Vale",
                 golden_sun::SceneId::WildForest => "WildForest",
+                golden_sun::SceneId::Bilibin => "Bilibin",
+                golden_sun::SceneId::KolimaForest => "KolimaForest",
                 golden_sun::SceneId::Cave => "Cave",
                 golden_sun::SceneId::SolSanctum => "SolSanctum",
                 _ => "Vale",
@@ -575,6 +631,8 @@ impl GameCtx {
             match target {
                 SceneId::Vale => self.play_bgm("vale"),
                 SceneId::WildForest => self.play_bgm("battle"),
+                SceneId::Bilibin => self.play_bgm("bilibin"),
+                SceneId::KolimaForest => self.play_bgm("forest"),
                 SceneId::Cave => self.play_bgm("battle"),
                 SceneId::SolSanctum => self.play_bgm("boss"),
                 _ => {}
@@ -753,6 +811,9 @@ impl GameCtx {
             let owned = OwnedDjinn::new(djinn_template.clone());
             self.collected_djinn.push(owned);
             
+            // 设置收集 Djinn 的辅助 flag
+            self.story_flags.set("collected_any_djinn");
+            
             // 自动装备到第一个有空位的角色
             self.auto_equip_djinn(djinn_id);
             
@@ -855,6 +916,8 @@ impl GameCtx {
             if scene_name == match self.scene.current() {
                 golden_sun::SceneId::Vale => "Vale",
                 golden_sun::SceneId::WildForest => "WildForest",
+                golden_sun::SceneId::Bilibin => "Bilibin",
+                golden_sun::SceneId::KolimaForest => "KolimaForest",
                 golden_sun::SceneId::Cave => "Cave",
                 golden_sun::SceneId::SolSanctum => "SolSanctum",
                 _ => "Vale",
@@ -945,5 +1008,15 @@ impl GameCtx {
         self.level_up_new_level = new_level;
         self.level_up_timer = 0.0;
         self.state = GameState::LevelUp { old_level, new_level, timer: 0.0 };
+    }
+
+    /// 启动新游戏（从开场动画后进入）
+    pub fn start_new_game(&mut self) {
+        self.camera = Camera::new(PLAYER_START_X, PLAYER_START_Y);
+        self.player_entity = Entity::new_player(
+            Entity::tile_to_world(PLAYER_START_X, PLAYER_START_Y));
+        self.scene.request_switch(golden_sun::SceneId::Vale);
+        self.story_flags.set("opening_seen");
+        self.state = GameState::WorldMap;
     }
 }

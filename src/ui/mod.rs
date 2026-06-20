@@ -19,6 +19,36 @@ pub fn draw_title_screen() {
     draw_text("按 Space 菜单", 160.0, 260.0, 16.0, GRAY);
 }
 
+/// 增强版标题画面（Phase 9.6.2）
+pub fn draw_title_enhanced(game_time: f32, has_save: bool) {
+    let h = constants::RENDER_TARGET_H as f32;
+    let screen_h = h as i32;
+    for y in (0..screen_h).step_by(2) {
+        let t = y as f32 / h;
+        let r = 10.0 + t * 30.0;
+        let g = 10.0 + t * 20.0;
+        let b = 40.0 + t * 40.0;
+        draw_line(0.0, y as f32, constants::RENDER_TARGET_W as f32, y as f32, 1.0,
+            Color::new(r / 255.0, g / 255.0, b / 255.0, 1.0));
+    }
+
+    let title_alpha = 200.0;
+    draw_text("GOLDEN SUN", constants::RENDER_TARGET_W as f32 / 2.0 - 80.0, 100.0, 36.0,
+        Color::new(255.0, 215.0, 0.0, title_alpha / 255.0));
+
+    let blink = (game_time * 2.0).sin().abs();
+    let prompt_color = Color::new(255.0, 255.0, 255.0, (blink * 128.0 + 127.0) / 255.0);
+    draw_text("Press START to begin", constants::RENDER_TARGET_W as f32 / 2.0 - 80.0, 200.0, 16.0, prompt_color);
+
+    draw_text("v0.9.2 - Phase 9", 10.0, constants::RENDER_TARGET_H as f32 - 20.0, 10.0,
+        Color::from_rgba(169, 169, 169, 255));
+
+    if has_save {
+        draw_text("存档检测到 - Press Continue", 10.0, constants::RENDER_TARGET_H as f32 - 40.0, 10.0,
+            Color::new(255.0, 215.0, 0.0, 1.0));
+    }
+}
+
 /// 绘制暂停菜单
 pub fn draw_pause_menu(selection: usize, items: &[&str]) {
     draw_rectangle(100.0, 80.0, 440.0, 320.0, Color::from_rgba(0, 0, 0, 200));

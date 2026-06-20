@@ -108,6 +108,41 @@ fn generate_boss_bgm() -> Vec<f32> {
     data
 }
 
+/// 生成 Bilibin 城镇主题 BGM（欢快 E 大调感觉）
+fn generate_bilibin_bgm() -> Vec<f32> {
+    let sample_rate = 22050;
+    let duration = 6.0;
+    let num_samples = (sample_rate as f32 * duration) as usize;
+    let mut data = Vec::with_capacity(num_samples);
+    let melody_notes = [330.0, 392.0, 440.0, 392.0, 330.0, 294.0, 330.0, 392.0];
+    for i in 0..num_samples {
+        let t = i as f32 / sample_rate as f32;
+        let note_idx = (i / (sample_rate / 4)) % melody_notes.len();
+        let freq = melody_notes[note_idx];
+        let env = ((t * 4.0).fract() * 4.0).clamp(0.0, 1.0);
+        let sample = (t * freq * std::f32::consts::TAU).sin() * 0.15 * env;
+        let harm = (t * freq * 1.5 * std::f32::consts::TAU).sin() * 0.08 * env;
+        data.push(sample + harm);
+    }
+    data
+}
+
+/// 生成 Kolima 森林主题 BGM（神秘氛围）
+fn generate_forest_bgm() -> Vec<f32> {
+    let sample_rate = 22050;
+    let duration = 8.0;
+    let num_samples = (sample_rate as f32 * duration) as usize;
+    let mut data = Vec::with_capacity(num_samples);
+    for i in 0..num_samples {
+        let t = i as f32 / sample_rate as f32;
+        let base = (t * 150.0 * std::f32::consts::TAU).sin() * 0.2;
+        let wobble = (t * 200.0 * std::f32::consts::TAU).sin() * (t * 2.0).sin() * 0.1;
+        let high = (t * 600.0 * std::f32::consts::TAU).sin() * 0.05;
+        data.push((base + wobble + high) * 0.5);
+    }
+    data
+}
+
 /// BGM 管理器
 pub struct BgmPlayer {
     sounds: HashMap<&'static str, Sound>,
@@ -121,6 +156,8 @@ impl BgmPlayer {
         sounds.insert("vale", load_audio(generate_vale_theme(), SAMPLE_RATE).await);
         sounds.insert("battle", load_audio(generate_battle_theme(), SAMPLE_RATE).await);
         sounds.insert("boss", load_audio(generate_boss_bgm(), SAMPLE_RATE).await);
+        sounds.insert("bilibin", load_audio(generate_bilibin_bgm(), SAMPLE_RATE).await);
+        sounds.insert("forest", load_audio(generate_forest_bgm(), SAMPLE_RATE).await);
         Self { sounds, current: None }
     }
 
@@ -169,6 +206,8 @@ impl SfxManager {
         sounds.insert("victory", generate_sfx_sound(440.0, 0.5, 0.6).await);
         sounds.insert("djinn", generate_sfx_sound(550.0, 0.25, 0.5).await);
         sounds.insert("summon", generate_sfx_sound(330.0, 0.5, 0.7).await);
+        sounds.insert("game_over", generate_sfx_sound(440.0, 0.8, 0.4).await);
+        sounds.insert("opening", generate_sfx_sound(220.0, 0.6, 0.3).await);
         Self { sounds }
     }
 

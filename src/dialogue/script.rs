@@ -25,6 +25,8 @@ pub struct DialogueChoice {
 pub struct DialoguePage {
     pub lines: &'static [DialogueLine],
     pub choices: &'static [DialogueChoice],
+    /// 显示此页所需的剧情 flag
+    pub require_flags: &'static [&'static str],
 }
 
 /// 完整对话脚本 = 多页顺序播放
@@ -78,6 +80,7 @@ const SANCTUM_CENTER_LINE: DialogueLine = DialogueLine {
 const SANCTUM_CENTER_PAGE: DialoguePage = DialoguePage {
     lines: &[SANCTUM_CENTER_LINE],
     choices: &[],
+    require_flags: &[],
 };
 
 pub const SYSTEM_SANCTUM_CENTER: DialogueScript = DialogueScript {
@@ -93,6 +96,7 @@ const SANCTUM_AFTERMATH_LINE: DialogueLine = DialogueLine {
 const SANCTUM_AFTERMATH_PAGE: DialoguePage = DialoguePage {
     lines: &[SANCTUM_AFTERMATH_LINE],
     choices: &[],
+    require_flags: &[],
 };
 
 pub const SYSTEM_SANCTUM_AFTERMATH: DialogueScript = DialogueScript {
@@ -227,6 +231,20 @@ const GARSMIN_PAGE7_ACTIONS: &[DialogueAction] = &[
 const GARSMIN_PAGE7_LINES: &[DialogueLine] = &[
     DialogueLine { text: GARSMIN_PAGE7_TEXT, actions: GARSMIN_PAGE7_ACTIONS },
 ];
+
+// ── Garsmin Page 0 (post-prologue) ──
+
+const GARSMIN_PAGE0_TEXT: &str = "你终于来了，孩子。\n去见见 Ivan 和 Mia 吧，他们等你很久了。";
+
+const GARSMIN_PAGE0_LINES: &[DialogueLine] = &[
+    DialogueLine { text: GARSMIN_PAGE0_TEXT, actions: &[DialogueAction::SetFlag("garsmin_started_talk")] },
+];
+
+const GARSMIN_PAGE0_PAGE: DialoguePage = DialoguePage {
+    lines: GARSMIN_PAGE0_LINES,
+    choices: &[],
+    require_flags: &["prologue_seen"],
+};
 
 const GARSMIN_CHOICES: &[DialogueChoice] = &[
     DialogueChoice { label: "冒险探索", target_page: 2, require_flag: Some("met_garsmin"), require_affinity: None, set_flag: Some("garsmin_bold") },
@@ -404,84 +422,325 @@ const PROSPECTOR_PAGE2_LINES: &[DialogueLine] = &[
     DialogueLine { text: PROSPECTOR_PAGE2_TEXT, actions: PROSPECTOR_PAGE2_ACTIONS },
 ];
 
+// ── Bilibin NPCs ──
+
+const BILIBIN_ELDER_PAGE1_TEXT: &str = "欢迎来到 Bilibin，远方的客人。听说北边的洞穴里有古代遗迹……";
+const BILIBIN_ELDER_PAGE1_LINES: &[DialogueLine] = &[
+    DialogueLine { text: BILIBIN_ELDER_PAGE1_TEXT, actions: &[DialogueAction::SetFlag("met_bilibin_elder")] },
+];
+
+const BILIBIN_ELDER_PAGE2_TEXT: &str = "小心 Kolima 森林，那里最近出现了新的魔物。";
+const BILIBIN_ELDER_PAGE2_LINES: &[DialogueLine] = &[
+    DialogueLine { text: BILIBIN_ELDER_PAGE2_TEXT, actions: &[DialogueAction::SetFlag("elder_warning")] },
+];
+
+const BILIBIN_MERCHANT_PAGE1_TEXT: &str = "要买点什么吗？我们这儿有最好的装备！";
+const BILIBIN_MERCHANT_PAGE1_LINES: &[DialogueLine] = &[
+    DialogueLine { text: BILIBIN_MERCHANT_PAGE1_TEXT, actions: &[DialogueAction::SetFlag("met_bilibin_merchant")] },
+];
+
+const BILIBIN_MERCHANT_PAGE2_TEXT: &str = "啊，你是精灵使吧？我听说东方洞穴里藏着珍贵的 Djinn……";
+const BILIBIN_MERCHANT_PAGE2_LINES: &[DialogueLine] = &[
+    DialogueLine { text: BILIBIN_MERCHANT_PAGE2_TEXT, actions: &[] },
+];
+
+const BILIBIN_TRAVELER_PAGE1_TEXT: &str = "我从东边来，Kolima 森林很美，但也很危险。";
+const BILIBIN_TRAVELER_PAGE1_LINES: &[DialogueLine] = &[
+    DialogueLine { text: BILIBIN_TRAVELER_PAGE1_TEXT, actions: &[DialogueAction::SetFlag("met_traveler")] },
+];
+
+const BILIBIN_TRAVELER_PAGE2_TEXT: &str = "如果你能找到森林深处的贤者，他一定会告诉你很多秘密。";
+const BILIBIN_TRAVELER_PAGE2_LINES: &[DialogueLine] = &[
+    DialogueLine { text: BILIBIN_TRAVELER_PAGE2_TEXT, actions: &[] },
+];
+
+const BILIBIN_GUARD_PAGE1_TEXT: &str = "这里是 Bilibin 的入口，外来者请小心。";
+const BILIBIN_GUARD_PAGE1_LINES: &[DialogueLine] = &[
+    DialogueLine { text: BILIBIN_GUARD_PAGE1_TEXT, actions: &[DialogueAction::SetFlag("met_guard")] },
+];
+
+const BILIBIN_GUARD_PAGE2_TEXT: &str = "洞穴那边不太平，最近有很多魔物出没。";
+const BILIBIN_GUARD_PAGE2_LINES: &[DialogueLine] = &[
+    DialogueLine { text: BILIBIN_GUARD_PAGE2_TEXT, actions: &[] },
+];
+
+const KOLIMA_WANDERER_PAGE1_TEXT: &str = "你在找 Growth 精灵力？在东边的洞穴里可能有线索……";
+const KOLIMA_WANDERER_PAGE1_LINES: &[DialogueLine] = &[
+    DialogueLine { text: KOLIMA_WANDERER_PAGE1_TEXT, actions: &[DialogueAction::SetFlag("met_wanderer")] },
+];
+
+const KOLIMA_SAGE_PAGE1_TEXT: &str = "你身上有 Djinn 的气息……收集它们，但不要滥用力量。";
+const KOLIMA_SAGE_PAGE1_LINES: &[DialogueLine] = &[
+    DialogueLine { text: KOLIMA_SAGE_PAGE1_TEXT, actions: &[DialogueAction::SetFlag("met_sage")] },
+];
+
+const KOLIMA_SAGE_PAGE2_TEXT: &str = "当 16 个 Djinn 全部集结之时，炼金术的真正力量才会显现。";
+const KOLIMA_SAGE_PAGE2_LINES: &[DialogueLine] = &[
+    DialogueLine { text: KOLIMA_SAGE_PAGE2_TEXT, actions: &[] },
+];
+
+// ── Forest Traveler NPC (WildForest scene) ──
+
+const FOREST_TRAVELER_PAGE1_TEXT: &str = "这片森林很大，小心别迷路了。";
+const FOREST_TRAVELER_PAGE1_LINES: &[DialogueLine] = &[
+    DialogueLine { text: FOREST_TRAVELER_PAGE1_TEXT, actions: &[DialogueAction::SetFlag("met_forest_traveler")] },
+];
+
+const FOREST_TRAVELER_PAGE2_TEXT: &str = "往东边走，有一个洞穴，里面可能有你要找的东西。";
+const FOREST_TRAVELER_PAGE2_LINES: &[DialogueLine] = &[
+    DialogueLine { text: FOREST_TRAVELER_PAGE2_TEXT, actions: &[] },
+];
+
+// ── Cave Sage NPC (Cave scene) ──
+
+const CAVE_SAGE_PAGE1_TEXT: &str = "你身上有精灵使的气息……";
+const CAVE_SAGE_PAGE1_LINES: &[DialogueLine] = &[
+    DialogueLine { text: CAVE_SAGE_PAGE1_TEXT, actions: &[DialogueAction::SetFlag("met_cave_sage")] },
+];
+
+const CAVE_SAGE_PAGE2_TEXT: &str = "深入洞穴，你会找到你想要的。";
+const CAVE_SAGE_PAGE2_LINES: &[DialogueLine] = &[
+    DialogueLine { text: CAVE_SAGE_PAGE2_TEXT, actions: &[] },
+];
+
+// ── Vale Village NPCs ──
+
+const VALE_CHILD_PAGE1_TEXT: &str = "你好呀！你是从外面来的冒险者吗？";
+const VALE_CHILD_PAGE1_LINES: &[DialogueLine] = &[
+    DialogueLine { text: VALE_CHILD_PAGE1_TEXT, actions: &[DialogueAction::SetFlag("met_vale_child")] },
+];
+
+const VALE_CHILD_PAGE2_TEXT: &str = "Garsmin 爷爷说很久以前，这里有一个很大的城堡。";
+const VALE_CHILD_PAGE2_LINES: &[DialogueLine] = &[
+    DialogueLine { text: VALE_CHILD_PAGE2_TEXT, actions: &[] },
+];
+
+const VALE_CHILD_PAGE3_TEXT: &str = "池塘里晚上会发光，你看到了吗？好漂亮！";
+const VALE_CHILD_PAGE3_LINES: &[DialogueLine] = &[
+    DialogueLine { text: VALE_CHILD_PAGE3_TEXT, actions: &[] },
+];
+
+const VALE_FARMER_PAGE1_TEXT: &str = "今年的收成不错，多亏了池塘的水。";
+const VALE_FARMER_PAGE1_LINES: &[DialogueLine] = &[
+    DialogueLine { text: VALE_FARMER_PAGE1_TEXT, actions: &[DialogueAction::SetFlag("met_vale_farmer")] },
+];
+
+const VALE_FARMER_PAGE2_TEXT: &str = "WildForest 那边不太平，最近有很多魔物。";
+const VALE_FARMER_PAGE2_LINES: &[DialogueLine] = &[
+    DialogueLine { text: VALE_FARMER_PAGE2_TEXT, actions: &[] },
+];
+
+const VALE_FARMER_PAGE3_TEXT: &str = "Bilibin 镇的商人很好，他们的装备比这里的好。";
+const VALE_FARMER_PAGE3_LINES: &[DialogueLine] = &[
+    DialogueLine { text: VALE_FARMER_PAGE3_TEXT, actions: &[] },
+];
+
+const VALE_FISHER_PAGE1_TEXT: &str = "池塘里的光……你注意到了吗？";
+const VALE_FISHER_PAGE1_LINES: &[DialogueLine] = &[
+    DialogueLine { text: VALE_FISHER_PAGE1_TEXT, actions: &[DialogueAction::SetFlag("met_vale_fisher")] },
+];
+
+const VALE_FISHER_PAGE2_TEXT: &str = "有时候我看到金色的光从水里升起……";
+const VALE_FISHER_PAGE2_LINES: &[DialogueLine] = &[
+    DialogueLine { text: VALE_FISHER_PAGE2_TEXT, actions: &[] },
+];
+
+const VALE_FISHER_PAGE3_TEXT: &str = "长老说那是远古精灵的传说……也许是真的。";
+const VALE_FISHER_PAGE3_LINES: &[DialogueLine] = &[
+    DialogueLine { text: VALE_FISHER_PAGE3_TEXT, actions: &[] },
+];
+
+const VALE_OLD_WOMAN_PAGE1_TEXT: &str = "老故事啊……很久以前，这个世界有炼金术。";
+const VALE_OLD_WOMAN_PAGE1_LINES: &[DialogueLine] = &[
+    DialogueLine { text: VALE_OLD_WOMAN_PAGE1_TEXT, actions: &[DialogueAction::SetFlag("met_vale_old_woman")] },
+];
+
+const VALE_OLD_WOMAN_PAGE2_TEXT: &str = "你是 Adept，我能看出来。";
+const VALE_OLD_WOMAN_PAGE2_LINES: &[DialogueLine] = &[
+    DialogueLine { text: VALE_OLD_WOMAN_PAGE2_TEXT, actions: &[] },
+];
+
+const VALE_OLD_WOMAN_PAGE3_TEXT: &str = "Garsmin 长老会给你建议的，去找他吧。";
+const VALE_OLD_WOMAN_PAGE3_LINES: &[DialogueLine] = &[
+    DialogueLine { text: VALE_OLD_WOMAN_PAGE3_TEXT, actions: &[] },
+];
+
+const VALE_OLD_WOMAN_PAGE4_TEXT: &str = "愿精灵与你同在，年轻人。";
+const VALE_OLD_WOMAN_PAGE4_LINES: &[DialogueLine] = &[
+    DialogueLine { text: VALE_OLD_WOMAN_PAGE4_TEXT, actions: &[] },
+];
+
 const NPC_SCRIPTS: &[(&str, &DialogueScript)] = &[
+    // Bilibin NPCs
+    ("bilibin_elder", &DialogueScript {
+        pages: &[
+            DialoguePage { lines: BILIBIN_ELDER_PAGE1_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: BILIBIN_ELDER_PAGE2_LINES, choices: &[], require_flags: &[] },
+        ],
+        start_flag: Some("talked_to_bilibin_elder"),
+    }),
+    ("bilibin_merchant", &DialogueScript {
+        pages: &[
+            DialoguePage { lines: BILIBIN_MERCHANT_PAGE1_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: BILIBIN_MERCHANT_PAGE2_LINES, choices: &[], require_flags: &[] },
+        ],
+        start_flag: Some("talked_to_bilibin_merchant"),
+    }),
+    ("bilibin_traveler", &DialogueScript {
+        pages: &[
+            DialoguePage { lines: BILIBIN_TRAVELER_PAGE1_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: BILIBIN_TRAVELER_PAGE2_LINES, choices: &[], require_flags: &[] },
+        ],
+        start_flag: Some("talked_to_bilibin_traveler"),
+    }),
+    ("bilibin_guard", &DialogueScript {
+        pages: &[
+            DialoguePage { lines: BILIBIN_GUARD_PAGE1_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: BILIBIN_GUARD_PAGE2_LINES, choices: &[], require_flags: &[] },
+        ],
+        start_flag: Some("talked_to_bilibin_guard"),
+    }),
+    ("kolima_wanderer", &DialogueScript {
+        pages: &[
+            DialoguePage { lines: KOLIMA_WANDERER_PAGE1_LINES, choices: &[], require_flags: &[] },
+        ],
+        start_flag: Some("talked_to_kolima_wanderer"),
+    }),
+    ("kolima_sage", &DialogueScript {
+        pages: &[
+            DialoguePage { lines: KOLIMA_SAGE_PAGE1_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: KOLIMA_SAGE_PAGE2_LINES, choices: &[], require_flags: &[] },
+        ],
+        start_flag: Some("talked_to_kolima_sage"),
+    }),
+    // Forest Traveler (WildForest)
+    ("forest_traveler", &DialogueScript {
+        pages: &[
+            DialoguePage { lines: FOREST_TRAVELER_PAGE1_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: FOREST_TRAVELER_PAGE2_LINES, choices: &[], require_flags: &[] },
+        ],
+        start_flag: Some("talked_to_forest_traveler"),
+    }),
+    // Cave Sage (Cave)
+    ("cave_sage", &DialogueScript {
+        pages: &[
+            DialoguePage { lines: CAVE_SAGE_PAGE1_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: CAVE_SAGE_PAGE2_LINES, choices: &[], require_flags: &[] },
+        ],
+        start_flag: Some("talked_to_cave_sage"),
+    }),
+    // Vale Village NPCs
+    ("vale_child", &DialogueScript {
+        pages: &[
+            DialoguePage { lines: VALE_CHILD_PAGE1_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: VALE_CHILD_PAGE2_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: VALE_CHILD_PAGE3_LINES, choices: &[], require_flags: &[] },
+        ],
+        start_flag: Some("talked_to_vale_child"),
+    }),
+    ("vale_farmer", &DialogueScript {
+        pages: &[
+            DialoguePage { lines: VALE_FARMER_PAGE1_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: VALE_FARMER_PAGE2_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: VALE_FARMER_PAGE3_LINES, choices: &[], require_flags: &[] },
+        ],
+        start_flag: Some("talked_to_vale_farmer"),
+    }),
+    ("vale_fisher", &DialogueScript {
+        pages: &[
+            DialoguePage { lines: VALE_FISHER_PAGE1_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: VALE_FISHER_PAGE2_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: VALE_FISHER_PAGE3_LINES, choices: &[], require_flags: &[] },
+        ],
+        start_flag: Some("talked_to_vale_fisher"),
+    }),
+    ("vale_old_woman", &DialogueScript {
+        pages: &[
+            DialoguePage { lines: VALE_OLD_WOMAN_PAGE1_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: VALE_OLD_WOMAN_PAGE2_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: VALE_OLD_WOMAN_PAGE3_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: VALE_OLD_WOMAN_PAGE4_LINES, choices: &[], require_flags: &[] },
+        ],
+        start_flag: Some("talked_to_vale_old_woman"),
+    }),
     ("garsmin", &DialogueScript {
         pages: &[
-            DialoguePage { lines: GARSMIN_LINES, choices: GARSMIN_CHOICES },
-            DialoguePage { lines: GARSMIN_PAGE2_LINES, choices: &[] },
-            DialoguePage { lines: GARSMIN_PAGE3_LINES, choices: &[] },
-            DialoguePage { lines: GARSMIN_PAGE4_LINES, choices: &[] },
-            DialoguePage { lines: GARSMIN_PAGE5_LINES, choices: &[] },
-            DialoguePage { lines: GARSMIN_PAGE6_LINES, choices: &[] },
-            DialoguePage { lines: GARSMIN_PAGE7_LINES, choices: &[] },
-            DialoguePage { lines: GARSMIN_PAGE8_LINES, choices: &[] },
-            DialoguePage { lines: GARSMIN_PAGE9_LINES, choices: &[] },
-            DialoguePage { lines: GARSMIN_PAGE10_LINES, choices: &[] },
+            GARSMIN_PAGE0_PAGE,
+            DialoguePage { lines: GARSMIN_LINES, choices: GARSMIN_CHOICES, require_flags: &[] },
+            DialoguePage { lines: GARSMIN_PAGE2_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: GARSMIN_PAGE3_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: GARSMIN_PAGE4_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: GARSMIN_PAGE5_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: GARSMIN_PAGE6_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: GARSMIN_PAGE7_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: GARSMIN_PAGE8_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: GARSMIN_PAGE9_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: GARSMIN_PAGE10_LINES, choices: &[], require_flags: &[] },
         ],
         start_flag: Some("talked_to_garsmin"),
     }),
     ("ivan", &DialogueScript {
         pages: &[
-            DialoguePage { lines: IVAN_PAGE1_LINES, choices: IVAN_PAGE1_CHOICES },
-            DialoguePage { lines: IVAN_PAGE2_LINES, choices: &[] },
-            DialoguePage { lines: IVAN_PAGE3_LINES, choices: &[] },
-            DialoguePage { lines: IVAN_PAGE4_LINES, choices: &[] },
+            DialoguePage { lines: IVAN_PAGE1_LINES, choices: IVAN_PAGE1_CHOICES, require_flags: &[] },
+            DialoguePage { lines: IVAN_PAGE2_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: IVAN_PAGE3_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: IVAN_PAGE4_LINES, choices: &[], require_flags: &[] },
             DialoguePage { lines: IVAN_PAGE5_LINES, choices: &[
                 DialogueChoice { label: "继续说", target_page: 5, require_flag: Some("garet_ready"), require_affinity: None, set_flag: None },
-            ]},
+            ], require_flags: &[] },
             DialoguePage { lines: IVAN_PAGE6_LINES, choices: &[
                 DialogueChoice { label: "继续说", target_page: 0, require_flag: Some("ivan_travel_tip"), require_affinity: None, set_flag: None },
-            ]},
+            ], require_flags: &[] },
         ],
         start_flag: Some("talked_to_ivan"),
     }),
     ("mia", &DialogueScript {
         pages: &[
-            DialoguePage { lines: MIA_PAGE1_LINES, choices: &[] },
-            DialoguePage { lines: MIA_PAGE2_LINES, choices: &[] },
-            DialoguePage { lines: MIA_PAGE3_LINES, choices: &[] },
-            DialoguePage { lines: MIA_PAGE4_LINES, choices: &[] },
+            DialoguePage { lines: MIA_PAGE1_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: MIA_PAGE2_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: MIA_PAGE3_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: MIA_PAGE4_LINES, choices: &[], require_flags: &[] },
             DialoguePage { lines: MIA_PAGE5_LINES, choices: &[
                 DialogueChoice { label: "继续说", target_page: 0, require_flag: Some("completed_sol_sanctum"), require_affinity: None, set_flag: None },
-            ]},
+            ], require_flags: &[] },
             DialoguePage { lines: MIA_PAGE6_LINES, choices: &[
                 DialogueChoice { label: "继续说", target_page: 0, require_flag: Some("mia_farewell"), require_affinity: None, set_flag: None },
-            ]},
+            ], require_flags: &[] },
         ],
         start_flag: Some("talked_to_mia"),
     }),
     ("garet", &DialogueScript {
         pages: &[
-            DialoguePage { lines: GARRET_PAGE1_LINES, choices: &[] },
-            DialoguePage { lines: GARRET_PAGE2_LINES, choices: &[] },
-            DialoguePage { lines: GARRET_PAGE3_LINES, choices: &[] },
+            DialoguePage { lines: GARRET_PAGE1_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: GARRET_PAGE2_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: GARRET_PAGE3_LINES, choices: &[], require_flags: &[] },
             DialoguePage { lines: GARRET_PAGE4_LINES, choices: &[
                 DialogueChoice { label: "继续说", target_page: 0, require_flag: Some("garsmin_final_blessing"), require_affinity: None, set_flag: None },
-            ]},
+            ], require_flags: &[] },
             DialoguePage { lines: GARRET_PAGE5_LINES, choices: &[
                 DialogueChoice { label: "继续说", target_page: 0, require_flag: Some("garet_ready_to_go"), require_affinity: None, set_flag: None },
-            ]},
+            ], require_flags: &[] },
         ],
         start_flag: Some("talked_to_garet"),
     }),
     ("innkeeper", &DialogueScript {
         pages: &[
-            DialoguePage { lines: INNKEEPER_PAGE1_LINES, choices: INNKEEPER_PAGE1_CHOICES },
-            DialoguePage { lines: INNKEEPER_PAGE2_LINES, choices: &[] },
+            DialoguePage { lines: INNKEEPER_PAGE1_LINES, choices: INNKEEPER_PAGE1_CHOICES, require_flags: &[] },
+            DialoguePage { lines: INNKEEPER_PAGE2_LINES, choices: &[], require_flags: &[] },
         ],
         start_flag: Some("talked_to_innkeeper"),
     }),
     ("forest_hermit", &DialogueScript {
         pages: &[
-            DialoguePage { lines: HERMIT_PAGE1_LINES, choices: &[] },
-            DialoguePage { lines: HERMIT_PAGE2_LINES, choices: &[] },
+            DialoguePage { lines: HERMIT_PAGE1_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: HERMIT_PAGE2_LINES, choices: &[], require_flags: &[] },
         ],
         start_flag: Some("talked_to_hermit"),
     }),
     ("cave_prospector", &DialogueScript {
         pages: &[
-            DialoguePage { lines: PROSPECTOR_PAGE1_LINES, choices: &[] },
-            DialoguePage { lines: PROSPECTOR_PAGE2_LINES, choices: &[] },
+            DialoguePage { lines: PROSPECTOR_PAGE1_LINES, choices: &[], require_flags: &[] },
+            DialoguePage { lines: PROSPECTOR_PAGE2_LINES, choices: &[], require_flags: &[] },
         ],
         start_flag: Some("talked_to_prospector"),
     }),
@@ -506,9 +765,9 @@ mod tests {
     }
 
     #[test]
-    fn garsmin_script_has_ten_pages() {
+    fn garsmin_script_has_eleven_pages() {
         let s = get_script("garsmin").unwrap();
-        assert_eq!(s.page_count(), 10);
+        assert_eq!(s.page_count(), 11);
         assert_eq!(s.pages[0].lines.len(), 1);
     }
 
@@ -551,21 +810,21 @@ mod tests {
     }
 
     #[test]
-    fn garsmin_page8_sets_revealed_stars() {
+    fn garsmin_page9_sets_revealed_stars() {
         let s = get_script("garsmin").unwrap();
-        assert_eq!(s.pages[7].lines[0].actions[0], DialogueAction::SetFlag("garsmin_revealed_stars"));
+        assert_eq!(s.pages[8].lines[0].actions[0], DialogueAction::SetFlag("garsmin_revealed_stars"));
     }
 
     #[test]
-    fn garsmin_page9_sets_ancestor() {
+    fn garsmin_page10_sets_ancestor() {
         let s = get_script("garsmin").unwrap();
-        assert_eq!(s.pages[8].lines[0].actions[0], DialogueAction::SetFlag("garsmin_ancestor"));
+        assert_eq!(s.pages[9].lines[0].actions[0], DialogueAction::SetFlag("garsmin_ancestor"));
     }
 
     #[test]
-    fn garsmin_page10_sets_final_blessing() {
+    fn garsmin_page11_sets_final_blessing() {
         let s = get_script("garsmin").unwrap();
-        assert_eq!(s.pages[9].lines[0].actions[0], DialogueAction::SetFlag("garsmin_final_blessing"));
+        assert_eq!(s.pages[10].lines[0].actions[0], DialogueAction::SetFlag("garsmin_final_blessing"));
     }
 
     #[test]
@@ -624,19 +883,19 @@ mod tests {
     #[test]
     fn garsmin_page5_sets_sent_to_sanctum() {
         let s = get_script("garsmin").unwrap();
-        assert_eq!(s.pages[4].lines[0].actions[0], DialogueAction::SetFlag("garsmin_sent_to_sanctum"));
+        assert_eq!(s.pages[5].lines[0].actions[0], DialogueAction::SetFlag("garsmin_sent_to_sanctum"));
     }
 
     #[test]
     fn garsmin_page6_sets_complete_1() {
         let s = get_script("garsmin").unwrap();
-        assert_eq!(s.pages[5].lines[0].actions[0], DialogueAction::SetFlag("garsmin_complete_1"));
+        assert_eq!(s.pages[6].lines[0].actions[0], DialogueAction::SetFlag("garsmin_complete_1"));
     }
 
     #[test]
     fn garsmin_page7_sets_farewell() {
         let s = get_script("garsmin").unwrap();
-        assert_eq!(s.pages[6].lines[0].actions[0], DialogueAction::SetFlag("garsmin_farewell"));
+        assert_eq!(s.pages[7].lines[0].actions[0], DialogueAction::SetFlag("garsmin_farewell"));
     }
 
     #[test]

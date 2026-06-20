@@ -117,6 +117,30 @@ pub fn create_vale_npcs() -> Vec<Entity> {
             Direction::Down, "innkeeper",
             None,
         ),
+        // 孩子 — 站在村庄中心
+        Entity::new_npc(
+            6, Entity::tile_to_world(10.0, 14.0),
+            Direction::Down, "vale_child",
+            None,
+        ),
+        // 农夫 — 站在农田旁
+        Entity::new_npc(
+            7, Entity::tile_to_world(12.0, 16.0),
+            Direction::Left, "vale_farmer",
+            None,
+        ),
+        // 渔夫 — 站在池塘边
+        Entity::new_npc(
+            8, Entity::tile_to_world(8.0, 18.0),
+            Direction::Right, "vale_fisher",
+            None,
+        ),
+        // 老妇人 — 站在村口
+        Entity::new_npc(
+            9, Entity::tile_to_world(14.0, 12.0),
+            Direction::Up, "vale_old_woman",
+            None,
+        ),
     ]
 }
 
@@ -126,6 +150,8 @@ pub fn create_npcs_for_scene(scene: SceneId) -> Vec<Entity> {
     match scene {
         SceneId::Vale => create_vale_npcs(),
         SceneId::WildForest => create_wild_forest_npcs(),
+        SceneId::Bilibin => create_bilibin_npcs(),
+        SceneId::KolimaForest => create_kolima_forest_npcs(),
         SceneId::Cave => create_cave_npcs(),
         SceneId::SolSanctum => vec![],
         _ => create_vale_npcs(),
@@ -157,6 +183,46 @@ fn create_cave_npcs() -> Vec<Entity> {
         Entity::new_npc(
             21, Entity::tile_to_world(5.0, 10.0),
             Direction::Up, "cave_prospector",
+            None,
+        ),
+    ]
+}
+
+fn create_bilibin_npcs() -> Vec<Entity> {
+    vec![
+        Entity::new_npc(
+            30, Entity::tile_to_world(10.0, 5.0),
+            Direction::Down, "bilibin_elder",
+            None,
+        ),
+        Entity::new_npc(
+            31, Entity::tile_to_world(6.0, 10.0),
+            Direction::Right, "bilibin_merchant",
+            None,
+        ),
+        Entity::new_npc(
+            32, Entity::tile_to_world(14.0, 10.0),
+            Direction::Left, "bilibin_traveler",
+            None,
+        ),
+        Entity::new_npc(
+            33, Entity::tile_to_world(10.0, 15.0),
+            Direction::Up, "bilibin_guard",
+            None,
+        ),
+    ]
+}
+
+fn create_kolima_forest_npcs() -> Vec<Entity> {
+    vec![
+        Entity::new_npc(
+            40, Entity::tile_to_world(12.0, 8.0),
+            Direction::Down, "kolima_wanderer",
+            None,
+        ),
+        Entity::new_npc(
+            41, Entity::tile_to_world(18.0, 18.0),
+            Direction::Up, "kolima_sage",
             None,
         ),
     ]
@@ -196,7 +262,7 @@ mod tests {
     #[test]
     fn vale_has_four_npcs() {
         let npcs = create_vale_npcs();
-        assert_eq!(npcs.len(), 4);
+        assert_eq!(npcs.len(), 8);
     }
 
     #[test]
@@ -206,6 +272,10 @@ mod tests {
         assert!(vale.len() >= 3);
         let forest = create_npcs_for_scene(SceneId::WildForest);
         assert_eq!(forest.len(), 2);
+        let bilibin = create_npcs_for_scene(SceneId::Bilibin);
+        assert_eq!(bilibin.len(), 4);
+        let kolima = create_npcs_for_scene(SceneId::KolimaForest);
+        assert_eq!(kolima.len(), 2);
         let cave = create_npcs_for_scene(SceneId::Cave);
         assert_eq!(cave.len(), 2);
     }

@@ -156,6 +156,9 @@ pub enum ItemType {
     Potion,
     Ether,
     GoldRing,
+    Elixir,
+    Antidote,
+    Nut,
 }
 
 impl ItemType {
@@ -165,6 +168,21 @@ impl ItemType {
             ItemType::Potion => "Potion",
             ItemType::Ether => "Ether",
             ItemType::GoldRing => "Gold Ring",
+            ItemType::Elixir => "Elixir",
+            ItemType::Antidote => "Antidote",
+            ItemType::Nut => "Nut",
+        }
+    }
+
+    #[must_use]
+    pub fn description(&self) -> &'static str {
+        match self {
+            ItemType::Potion => "Restores 30 HP",
+            ItemType::Ether => "Restores 10 PP",
+            ItemType::GoldRing => "Doubles gold earned",
+            ItemType::Elixir => "Fully restores HP and PP",
+            ItemType::Antidote => "Cures poison",
+            ItemType::Nut => "Permanently increases ATK by 1",
         }
     }
 }

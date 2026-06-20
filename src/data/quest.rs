@@ -94,27 +94,38 @@ pub const QUEST_TEMPLATES: &[QuestEntry] = &[
     QuestEntry { id: "defeat_mythrilgolem", name: "古石像", hint: "击败 Sol Sanctum 深处的 MythrilGolem 守护者", chapter: 1, completed: false },
     QuestEntry { id: "leave_vale", name: "告别 Vale", hint: "带着 Elemental Star 离开 Vale", chapter: 2, completed: false },
     QuestEntry { id: "collect_first_djinn", name: "初遇 Djinn", hint: "在野外找到并收集第一个 Djinn", chapter: 2, completed: false },
-    QuestEntry { id: "collect_three_djinn", name: "精灵使之道", hint: "收集 3 个 Djinn，感受精灵的力量", chapter: 3, completed: false },
+    QuestEntry { id: "reach_bilibin", name: "抵达 Bilibin", hint: "穿过密林，到达 Bilibin 镇", chapter: 2, completed: false },
+    QuestEntry { id: "explore_cave", name: "洞穴探险", hint: "进入 Kolima 森林深处的洞穴", chapter: 2, completed: false },
+    QuestEntry { id: "collect_three_djinn", name: "精灵使之道", hint: "收集 3 个 Djinn", chapter: 2, completed: false },
     QuestEntry { id: "master_psynergy", name: "精灵力大师", hint: "解锁全部 7 种精灵力", chapter: 3, completed: false },
-    QuestEntry { id: "become_adept", name: "真正的 Adept", hint: "收集 5 个 Djinn 并激活高级职业", chapter: 3, completed: false },
+    QuestEntry { id: "first_summon", name: "初次召唤", hint: "在战斗中首次使用召唤", chapter: 3, completed: false },
+    QuestEntry { id: "collect_five_djinn", name: "真正的 Adept", hint: "收集 5 个 Djinn", chapter: 3, completed: false },
+    QuestEntry { id: "collect_ten_djinn", name: "精灵之力", hint: "收集 10 个 Djinn", chapter: 4, completed: false },
+    QuestEntry { id: "collect_all_djinn", name: "炼金术的传承", hint: "收集全部 16 个 Djinn", chapter: 4, completed: false },
 ];
 
 /// 预定义任务 — 游戏开局即添加
 pub fn default_quests() -> Vec<QuestEntry> {
     vec![
-        // ── 第一章：Vale 村 — 觉醒 ──
+        // ── Act 1：Vale 篇（觉醒） ──
         QuestEntry { id: "talk_to_villagers", name: "初访村民", hint: "和 Vale 村的 Ivan、Mia、Garsmin 聊聊", chapter: 1, completed: false },
         QuestEntry { id: "learn_psynergy", name: "觉醒的精灵力", hint: "使用一次精灵力，感受体内的力量", chapter: 1, completed: false },
         QuestEntry { id: "meet_garet", name: "与 Garet 会合", hint: "去村口找 Garet，一起探索 Sol Sanctum", chapter: 1, completed: false },
         QuestEntry { id: "explore_sanctum", name: "圣祭坛之谜", hint: "进入 Vale 后山的 Sol Sanctum", chapter: 1, completed: false },
         QuestEntry { id: "defeat_mythrilgolem", name: "古石像", hint: "击败 Sol Sanctum 深处的 MythrilGolem 守护者", chapter: 1, completed: false },
-        // ── 第二章：踏上旅程 ──
+        // ── Act 2：旅途篇（启程） ──
         QuestEntry { id: "leave_vale", name: "告别 Vale", hint: "带着 Elemental Star 离开 Vale", chapter: 2, completed: false },
         QuestEntry { id: "collect_first_djinn", name: "初遇 Djinn", hint: "在野外找到并收集第一个 Djinn", chapter: 2, completed: false },
-        // ── 第三章：力量之路 ──
-        QuestEntry { id: "collect_three_djinn", name: "精灵使之道", hint: "收集 3 个 Djinn，感受精灵的力量", chapter: 3, completed: false },
+        QuestEntry { id: "reach_bilibin", name: "抵达 Bilibin", hint: "穿过密林，到达 Bilibin 镇", chapter: 2, completed: false },
+        QuestEntry { id: "explore_cave", name: "洞穴探险", hint: "进入 Kolima 森林深处的洞穴", chapter: 2, completed: false },
+        QuestEntry { id: "collect_three_djinn", name: "精灵使之道", hint: "收集 3 个 Djinn", chapter: 2, completed: false },
+        // ── Act 3：成长篇（精通） ──
         QuestEntry { id: "master_psynergy", name: "精灵力大师", hint: "解锁全部 7 种精灵力", chapter: 3, completed: false },
-        QuestEntry { id: "become_adept", name: "真正的 Adept", hint: "收集 5 个 Djinn 并激活高级职业", chapter: 3, completed: false },
+        QuestEntry { id: "first_summon", name: "初次召唤", hint: "在战斗中首次使用召唤", chapter: 3, completed: false },
+        QuestEntry { id: "collect_five_djinn", name: "真正的 Adept", hint: "收集 5 个 Djinn", chapter: 3, completed: false },
+        // ── Act 4：终局篇（传承） ──
+        QuestEntry { id: "collect_ten_djinn", name: "精灵之力", hint: "收集 10 个 Djinn", chapter: 4, completed: false },
+        QuestEntry { id: "collect_all_djinn", name: "炼金术的传承", hint: "收集全部 16 个 Djinn", chapter: 4, completed: false },
     ]
 }
 
@@ -174,9 +185,9 @@ mod tests {
     }
 
     #[test]
-    fn default_quests_provides_ten_entries() {
+    fn default_quests_provides_fifteen_entries() {
         let quests = default_quests();
-        assert_eq!(quests.len(), 10);
+        assert_eq!(quests.len(), 15);
     }
 
     #[test]
@@ -207,6 +218,6 @@ mod tests {
 
     #[test]
     fn quest_templates_has_all_entries() {
-        assert_eq!(QUEST_TEMPLATES.len(), 10);
+        assert_eq!(QUEST_TEMPLATES.len(), 15);
     }
 }

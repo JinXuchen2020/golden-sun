@@ -10,6 +10,8 @@ pub enum SceneId {
     Title,
     Vale,
     WildForest,
+    Bilibin,
+    KolimaForest,
     Cave,
     SolSanctum,
 }
@@ -20,6 +22,8 @@ impl SceneId {
             SceneId::Title => "标题画面",
             SceneId::Vale => "Vale 村",
             SceneId::WildForest => "密林",
+            SceneId::Bilibin => "Bilibin 镇",
+            SceneId::KolimaForest => "柯利玛森林",
             SceneId::Cave => "洞穴",
             SceneId::SolSanctum => "Sol Sanctum",
         }

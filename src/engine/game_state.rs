@@ -112,6 +112,15 @@ pub enum GameState {
     BattleItemSelect {
         selection: usize,
     },
+    /// 战斗召唤选择子菜单
+    BattleSummonSelect {
+        selection: usize,
+    },
+    /// 游戏结束
+    GameOver {
+        timer: f32,
+        has_save: bool,
+    },
 }
 
 impl GameState {

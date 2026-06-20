@@ -4,6 +4,7 @@ use super::WaypointDef;
 use golden_sun::battle::BattleAction;
 use golden_sun::battle::BattlePhase;
 use golden_sun::constants::{self, TILE_SIZE};
+use golden_sun::data::cutscene::{all_cutscenes, CutsceneCmd};
 use golden_sun::dialogue::DialogueState;
 use golden_sun::engine::{Camera, GameState, PsynergyAnim};
 use golden_sun::replay;
@@ -87,10 +88,28 @@ impl GameCtx {
                 if self.input_bus.consume(InputEvent::Confirm)
                     || self.input_bus.consume(InputEvent::Menu)
                 {
-                    self.camera = Camera::new(super::PLAYER_START_X, super::PLAYER_START_Y);
-                    self.player_entity = Entity::new_player(
-                        Entity::tile_to_world(super::PLAYER_START_X, super::PLAYER_START_Y));
-                    self.state = GameState::WorldMap;
+                    // 序章开场 → 开场动画 → 新游戏
+                    if !self.story_flags.get("prologue_seen") {
+                        if let Some(cs) = all_cutscenes().iter().find(|c| c.id == "opening_prologue") {
+                            self.state = GameState::Cutscene {
+                                id: cs.id,
+                                step: 0,
+                                total_steps: cs.commands.len(),
+                                timer: 0.0,
+                            };
+                        }
+                    } else if !self.story_flags.get("opening_seen") {
+                        if let Some(cs) = all_cutscenes().iter().find(|c| c.id == "opening") {
+                            self.state = GameState::Cutscene {
+                                id: cs.id,
+                                step: 0,
+                                total_steps: cs.commands.len(),
+                                timer: 0.0,
+                            };
+                        }
+                    } else {
+                        self.start_new_game();
+                    }
                 }
                 // Secondary → 尝试读档
                 if self.input_bus.consume(InputEvent::Secondary) && !self.load_game() {
@@ -416,7 +435,7 @@ impl GameCtx {
                     // 清理已完成的 popup
                     battle.popups.retain(|p| p.timer < 1.0);
                     // B键长按切换turbo加速
-                    battle.turbo = is_key_down(KeyCode::Space);
+                    battle.turbo = is_key_down(KeyCode::B);
                     match battle.phase {
                         BattlePhase::PlayerInput => {
                             let player_action = if self.input_bus.consume(InputEvent::Confirm) {
@@ -452,10 +471,25 @@ impl GameCtx {
                             // 结算奖励（先取值避免借用冲突）
                             let coins = battle.total_coins;
                             let exp = battle.total_exp;
+                            let summon_used = battle.summon_used;
+                            let party_wiped = battle.party.iter().all(|c| !c.is_alive());
                             self.add_gold(coins);
                             self.add_exp(exp);
                             // 战斗胜利后召回所有 Djinn
                             self.recall_all_djinn();
+                            // 如果本场战斗使用了召唤，设置 flag
+                            if summon_used {
+                                self.story_flags.set("summon_used_in_battle");
+                            }
+                            if party_wiped {
+                                self.state = GameState::GameOver {
+                                    timer: 0.0,
+                                    has_save: self._storage.exists("save"),
+                                };
+                                self.play_sfx("cancel");
+                                self.battle = None;
+                                return;
+                            }
                             if self.input_bus.consume(InputEvent::Confirm) {
                                 self.battle = None;
                                 if !matches!(self.state, GameState::LevelUp { .. }) {
@@ -479,8 +513,210 @@ impl GameCtx {
                     }
                 }
             }
+            GameState::BattleMenu { ref mut selection } => {
+                const ACTIONS: [&str; 7] = ["Attack", "Defend", "Psynergy", "Summon", "Djinn", "Item", "Flee"];
+                if self.input_bus.consume(InputEvent::Up) {
+                    *selection = selection.saturating_sub(1);
+                }
+                if self.input_bus.consume(InputEvent::Down) {
+                    *selection = (*selection).min(ACTIONS.len() - 1);
+                }
+                if self.input_bus.consume(InputEvent::Cancel) {
+                    self.play_sfx("cancel");
+                    self.state = GameState::Battle;
+                    return;
+                }
+                if self.input_bus.consume(InputEvent::Confirm) {
+                    match *selection {
+                        0 => {
+                            // Attack — use first alive party member attacking first alive enemy
+                            if let Some(ref mut battle) = self.battle {
+                                battle.execute_turn(BattleAction::Attack(0));
+                            }
+                            self.state = GameState::Battle;
+                        }
+                        1 => {
+                            if let Some(ref mut battle) = self.battle {
+                                battle.execute_turn(BattleAction::Defend);
+                            }
+                            self.state = GameState::Battle;
+                        }
+                        2 => {
+                            // Psynergy — for now just do a basic attack
+                            if let Some(ref mut battle) = self.battle {
+                                battle.execute_turn(BattleAction::Attack(0));
+                            }
+                            self.state = GameState::Battle;
+                        }
+                        3 => {
+                            // Summon — open summon submenu
+                            self.play_sfx("confirm");
+                            self.state = GameState::BattleSummonSelect { selection: 0 };
+                        }
+                        4 => {
+                            // Djinn — open Djinn menu
+                            self.play_sfx("confirm");
+                            self.state = GameState::DjinnMenu {
+                                selection: 0, page: 0, character_select: 0,
+                            };
+                        }
+                        5 => {
+                            // Item — open item submenu
+                            self.play_sfx("confirm");
+                            self.state = GameState::BattleItemSelect { selection: 0 };
+                        }
+                        6 => {
+                            // Flee
+                            if let Some(ref mut battle) = self.battle {
+                                battle.execute_turn(BattleAction::Flee);
+                            }
+                            self.state = GameState::Battle;
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            GameState::BattleItemSelect { ref mut selection } => {
+                let items: Vec<&super::Item> = self.inventory.iter()
+                    .filter(|i| i.count > 0)
+                    .collect();
+                if items.is_empty() {
+                    self.state = GameState::BattleMenu { selection: 5 };
+                    return;
+                }
+                if self.input_bus.consume(InputEvent::Up) {
+                    *selection = selection.saturating_sub(1);
+                }
+                if self.input_bus.consume(InputEvent::Down) {
+                    *selection = (*selection).min(items.len() - 1);
+                }
+                if self.input_bus.consume(InputEvent::Cancel) {
+                    self.play_sfx("cancel");
+                    self.state = GameState::BattleMenu { selection: 5 };
+                    return;
+                }
+                if self.input_bus.consume(InputEvent::Confirm) {
+                    if let Some(item) = items.get(*selection) {
+                        let item_type = item.item_type;
+                        if let Some(ref mut battle) = self.battle {
+                            battle.execute_turn(BattleAction::UseItem(item_type, 0));
+                        }
+                        // Consume the item from inventory
+                        if let Some(inv_item) = self.inventory.iter_mut().find(|i| i.item_type == item_type && i.count > 0) {
+                            inv_item.count -= 1;
+                            if inv_item.count == 0 {
+                                self.inventory.retain(|i| i.count > 0);
+                            }
+                        }
+                    }
+                    self.state = GameState::Battle;
+                }
+            }
+            GameState::BattleSummonSelect { ref mut selection } => {
+                use golden_sun::data::summon::all_summons;
+                let summons = all_summons();
+                if self.input_bus.consume(InputEvent::Up) {
+                    *selection = selection.saturating_sub(1);
+                }
+                if self.input_bus.consume(InputEvent::Down) {
+                    *selection = (*selection).min(summons.len() - 1);
+                }
+                if self.input_bus.consume(InputEvent::Cancel) {
+                    self.play_sfx("cancel");
+                    self.state = GameState::BattleMenu { selection: 3 };
+                    return;
+                }
+                if self.input_bus.consume(InputEvent::Confirm) {
+                    if let Some(summon) = summons.get(*selection) {
+                        // Check if enough standby djinn
+                        let standby = if let Some(ref battle) = self.battle {
+                            battle.collect_standby_djinn_count(&self.collected_djinn)
+                        } else {
+                            0
+                        };
+                        if standby >= summon.djinn_required as usize {
+                            if let Some(ref mut battle) = self.battle {
+                                battle.execute_turn(BattleAction::Summon(*selection));
+                                battle.consume_standby_djinn(summon.djinn_required as usize);
+                            }
+                            self.state = GameState::Battle;
+                        } else {
+                            self.play_sfx("cancel");
+                        }
+                    }
+                }
+            }
             GameState::LevelUp { .. } => {
                 self.update_level_up();
+            }
+            GameState::GameOver { ref mut timer, has_save } => {
+                *timer += self.time.delta;
+                if *timer >= 2.0 {
+                    if self.input_bus.consume(InputEvent::Confirm) && has_save {
+                        self.load_game();
+                    } else if self.input_bus.consume(InputEvent::Cancel) {
+                        self.state = GameState::Title;
+                    }
+                }
+            }
+            GameState::Cutscene { id, ref mut step, total_steps: _, ref mut timer } => {
+                let cutscenes = all_cutscenes();
+                let current_cs = cutscenes.iter().find(|c| c.id == id);
+                let Some(commands) = current_cs.map(|c| c.commands) else {
+                    self.state = GameState::WorldMap;
+                    return;
+                };
+
+                if *step >= commands.len() {
+                    // Cutscene 全部完成
+                    if id == "opening_prologue" {
+                        // 序章完成后直接进入 Vale
+                        self.story_flags.set("opening_done");
+                        self.camera = Camera::new(super::PLAYER_START_X, super::PLAYER_START_Y);
+                        self.player_entity = Entity::new_player(
+                            Entity::tile_to_world(super::PLAYER_START_X, super::PLAYER_START_Y));
+                        self.scene.request_switch(golden_sun::SceneId::Vale);
+                        self.state = GameState::WorldMap;
+                    } else if id == "opening" {
+                        self.start_new_game();
+                    } else {
+                        self.state = GameState::WorldMap;
+                    }
+                    return;
+                }
+
+                *timer += self.time.delta;
+                let cmd = &commands[*step];
+
+                match cmd {
+                    CutsceneCmd::Wait(duration) => {
+                        if *timer >= *duration {
+                            *timer = 0.0;
+                            *step += 1;
+                        }
+                    }
+                    CutsceneCmd::FadeToBlack(_) | CutsceneCmd::FadeFromBlack(_) => {
+                        if *timer >= 0.5 {
+                            *timer = 0.0;
+                            *step += 1;
+                        }
+                    }
+                    CutsceneCmd::SetFlag(flag) => {
+                        self.story_flags.set(flag);
+                        *step += 1;
+                        *timer = 0.0;
+                    }
+                    CutsceneCmd::AutoDialog(_) => {
+                        if *timer >= 2.0 {
+                            *timer = 0.0;
+                            *step += 1;
+                        }
+                    }
+                    _ => {
+                        *step += 1;
+                        *timer = 0.0;
+                    }
+                }
             }
             _ => {}
         }
@@ -563,6 +799,7 @@ impl GameCtx {
 
     /// 执行精灵力 tile 修改（动画结束后调用）
     fn execute_psynergy_effect(&mut self, psynergy: PsynergyType, tx: i32, ty: i32) {
+        self.story_flags.set("psynergy_used");
         match psynergy {
             PsynergyType::Force => {
                 let facing = facing_from_angle(self.camera.rotation);
@@ -784,6 +1021,8 @@ impl GameCtx {
             let next = match self.scene.current() {
                 golden_sun::SceneId::Vale => golden_sun::SceneId::WildForest,
                 golden_sun::SceneId::WildForest => golden_sun::SceneId::Cave,
+                golden_sun::SceneId::Bilibin => golden_sun::SceneId::KolimaForest,
+                golden_sun::SceneId::KolimaForest => golden_sun::SceneId::Bilibin,
                 golden_sun::SceneId::Cave => golden_sun::SceneId::SolSanctum,
                 golden_sun::SceneId::SolSanctum => golden_sun::SceneId::Vale,
                 _ => golden_sun::SceneId::Vale,
@@ -793,7 +1032,9 @@ impl GameCtx {
         if px <= 1.0 {
             let next = match self.scene.current() {
                 golden_sun::SceneId::Vale => golden_sun::SceneId::Cave,
-                golden_sun::SceneId::WildForest => golden_sun::SceneId::Vale,
+                golden_sun::SceneId::WildForest => golden_sun::SceneId::Bilibin,
+                golden_sun::SceneId::Bilibin => golden_sun::SceneId::KolimaForest,
+                golden_sun::SceneId::KolimaForest => golden_sun::SceneId::Bilibin,
                 golden_sun::SceneId::Cave => golden_sun::SceneId::WildForest,
                 golden_sun::SceneId::SolSanctum => golden_sun::SceneId::Vale,
                 _ => golden_sun::SceneId::Vale,
@@ -804,6 +1045,8 @@ impl GameCtx {
             let next = match self.scene.current() {
                 golden_sun::SceneId::Vale => golden_sun::SceneId::WildForest,
                 golden_sun::SceneId::WildForest => golden_sun::SceneId::Cave,
+                golden_sun::SceneId::Bilibin => golden_sun::SceneId::KolimaForest,
+                golden_sun::SceneId::KolimaForest => golden_sun::SceneId::Bilibin,
                 golden_sun::SceneId::Cave => golden_sun::SceneId::SolSanctum,
                 golden_sun::SceneId::SolSanctum => golden_sun::SceneId::Vale,
                 _ => golden_sun::SceneId::Vale,
@@ -814,6 +1057,8 @@ impl GameCtx {
             let next = match self.scene.current() {
                 golden_sun::SceneId::Vale => golden_sun::SceneId::Cave,
                 golden_sun::SceneId::WildForest => golden_sun::SceneId::Vale,
+                golden_sun::SceneId::Bilibin => golden_sun::SceneId::WildForest,
+                golden_sun::SceneId::KolimaForest => golden_sun::SceneId::WildForest,
                 golden_sun::SceneId::Cave => golden_sun::SceneId::WildForest,
                 golden_sun::SceneId::SolSanctum => golden_sun::SceneId::Vale,
                 _ => golden_sun::SceneId::Vale,
@@ -824,41 +1069,139 @@ impl GameCtx {
 
     /// 追踪任务进度 — 根据游戏事件推进 QuestLog
     fn track_quest_progress(&mut self) {
-        // 解锁精灵力 → 完成"初次精灵力"任务
-        if self.unlocked_count > 0 {
-            self.quest_log.complete("first_psynergy");
+        // Act 1: prologue_seen → unlock talk_to_villagers
+        if self.story_flags.get("prologue_seen") && !self.quest_log.has("talk_to_villagers") {
+            self.quest_log.unlock("talk_to_villagers");
         }
-        // 离开 Vale 村 → 完成"探索密林"任务
-        if self.scene.current() != golden_sun::SceneId::Vale {
-            self.quest_log.complete("explore_forest");
+
+        // Act 1: met_ivan + met_mia + met_garsmin → complete talk_to_villagers, unlock learn_psynergy
+        if self.story_flags.get("met_ivan") && self.story_flags.get("met_mia") && self.story_flags.get("met_garsmin") {
+            self.quest_log.complete("talk_to_villagers");
+            if !self.quest_log.has("learn_psynergy") {
+                self.quest_log.unlock("learn_psynergy");
+            }
+        }
+
+        // Act 1: unlocked_count > 0 → complete learn_psynergy, unlock meet_garet
+        if self.unlocked_count > 0 {
+            self.quest_log.complete("learn_psynergy");
+            if !self.quest_log.has("meet_garet") {
+                self.quest_log.unlock("meet_garet");
+            }
+        }
+
+        // Act 1: met_garet + garsmin_sent_to_sanctum → complete meet_garet, unlock explore_sanctum
+        if self.story_flags.get("met_garet") && self.story_flags.get("garsmin_sent_to_sanctum") {
+            self.quest_log.complete("meet_garet");
+            if !self.quest_log.has("explore_sanctum") {
+                self.quest_log.unlock("explore_sanctum");
+            }
+        }
+
+        // Act 1: entering SolSanctum → complete explore_sanctum, unlock defeat_mythrilgolem
+        if self.scene.current() == golden_sun::SceneId::SolSanctum {
+            self.quest_log.complete("explore_sanctum");
+            if !self.quest_log.has("defeat_mythrilgolem") {
+                self.quest_log.unlock("defeat_mythrilgolem");
+            }
+        }
+
+        // Act 1: completed_sol_sanctum → complete defeat_mythrilgolem, unlock leave_vale
+        if self.story_flags.get("completed_sol_sanctum") {
+            self.quest_log.complete("defeat_mythrilgolem");
+            if !self.quest_log.has("leave_vale") {
+                self.quest_log.unlock("leave_vale");
+            }
+        }
+
+        // Act 2: leaving Vale → complete leave_vale, unlock collect_first_djinn + reach_bilibin
+        if self.story_flags.get("left_vale") {
+            self.quest_log.complete("leave_vale");
+            if !self.quest_log.has("collect_first_djinn") {
+                self.quest_log.unlock("collect_first_djinn");
+            }
+            if !self.quest_log.has("reach_bilibin") {
+                self.quest_log.unlock("reach_bilibin");
+            }
+        }
+
+        // Act 2: collected_djinn.len() >= 1 → complete collect_first_djinn, unlock collect_three_djinn
+        if !self.collected_djinn.is_empty() {
+            self.quest_log.complete("collect_first_djinn");
+            if !self.quest_log.has("collect_three_djinn") {
+                self.quest_log.unlock("collect_three_djinn");
+            }
+        }
+
+        // Act 2: entering WildForest (flag for reaching Bilibin area)
+        if self.scene.current() == golden_sun::SceneId::WildForest
+            && !self.story_flags.get("entered_wild_forest")
+        {
+            self.story_flags.set("entered_wild_forest");
+        }
+
+        // Act 2: collected_djinn.len() >= 3 → complete collect_three_djinn, unlock explore_cave
+        if self.collected_djinn.len() >= 3 {
+            self.quest_log.complete("collect_three_djinn");
+            if !self.quest_log.has("explore_cave") {
+                self.quest_log.unlock("explore_cave");
+            }
+        }
+
+        // Act 3: unlocked_count >= 7 → complete master_psynergy, unlock first_summon
+        if self.unlocked_count >= 7 {
+            self.quest_log.complete("master_psynergy");
+            if !self.quest_log.has("first_summon") {
+                self.quest_log.unlock("first_summon");
+            }
+        }
+
+        // Act 3: summon_used_in_battle flag → complete first_summon, unlock collect_five_djinn
+        if self.story_flags.get("summon_used_in_battle") {
+            self.quest_log.complete("first_summon");
+            if !self.quest_log.has("collect_five_djinn") {
+                self.quest_log.unlock("collect_five_djinn");
+            }
+        }
+
+        // Act 3: collected_djinn.len() >= 5 → complete collect_five_djinn, unlock collect_ten_djinn
+        if self.collected_djinn.len() >= 5 {
+            self.quest_log.complete("collect_five_djinn");
+            if !self.quest_log.has("collect_ten_djinn") {
+                self.quest_log.unlock("collect_ten_djinn");
+            }
+        }
+
+        // Act 4: collected_djinn.len() >= 10 → complete collect_ten_djinn, unlock collect_all_djinn
+        if self.collected_djinn.len() >= 10 {
+            self.quest_log.complete("collect_ten_djinn");
+            if !self.quest_log.has("collect_all_djinn") {
+                self.quest_log.unlock("collect_all_djinn");
+            }
+        }
+
+        // Act 4: collected_djinn.len() >= 12 → complete collect_all_djinn
+        if self.collected_djinn.len() >= 12 {
+            self.quest_log.complete("collect_all_djinn");
         }
     }
 
     /// 故事进展检测 — 根据 flag 自动完成对应任务
     fn update_story_progression(&mut self) {
-        // Detect all 3 villagers met
+        // 旧逻辑兼容：检测所有村民已对话
         if self.story_flags.get("met_ivan") && self.story_flags.get("met_mia")
             && self.story_flags.get("met_garsmin")
             && !self.story_flags.get("villagers_all_met")
         {
             self.story_flags.set("villagers_all_met");
-            self.quest_log.complete("talk_to_villagers");
         }
 
-        // Detect Garet party ready
+        // 检测 Garet 队伍就绪
         if self.story_flags.get("met_garet")
             && self.story_flags.get("garsmin_sent_to_sanctum")
             && !self.story_flags.get("party_ready")
         {
             self.story_flags.set("party_ready");
-            self.quest_log.complete("find_garet");
-        }
-
-        // Detect becoming adept (5+ djinn equipped)
-        let equipped_count = self.collected_djinn.iter().filter(|d| d.equipped).count();
-        if equipped_count >= 5 && !self.story_flags.get("became_adept") {
-            self.story_flags.set("became_adept");
-            self.quest_log.complete("become_adept");
         }
     }
 
@@ -870,6 +1213,8 @@ impl GameCtx {
             let scene_name = match self.scene.current() {
                 golden_sun::SceneId::Vale => "Vale",
                 golden_sun::SceneId::WildForest => "WildForest",
+                golden_sun::SceneId::Bilibin => "Bilibin",
+                golden_sun::SceneId::KolimaForest => "KolimaForest",
                 golden_sun::SceneId::Cave => "Cave",
                 golden_sun::SceneId::SolSanctum => "SolSanctum",
                 _ => "Vale",
@@ -908,6 +1253,19 @@ impl GameCtx {
                 }
                 if px >= 19.0 && (9.0..=11.0).contains(&py) {
                     self.request_scene_switch(golden_sun::SceneId::Cave);
+                }
+            }
+            golden_sun::SceneId::Bilibin => {
+                if px <= 0.5 && (9.0..=11.0).contains(&py) {
+                    self.request_scene_switch(golden_sun::SceneId::WildForest);
+                }
+                if py >= 19.0 && (9.0..=11.0).contains(&px) {
+                    self.request_scene_switch(golden_sun::SceneId::KolimaForest);
+                }
+            }
+            golden_sun::SceneId::KolimaForest => {
+                if py <= 0.5 && (10.0..=14.0).contains(&px) {
+                    self.request_scene_switch(golden_sun::SceneId::Bilibin);
                 }
             }
             golden_sun::SceneId::Cave => {

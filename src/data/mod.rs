@@ -38,6 +38,17 @@ pub fn enemies_for_area(area: &str) -> Vec<EnemyConfig> {
             EnemyConfig { name: "Treant", level: 6, display_name: "树精", description: "古老森林的守护者" },
             EnemyConfig { name: "Slime", level: 2, display_name: "史莱姆", description: "元素凝聚成的软体生物" },
         ],
+        "Bilibin" => vec![
+            EnemyConfig { name: "Rat", level: 2, display_name: "老鼠", description: "镇外常见的害兽" },
+            EnemyConfig { name: "Spider", level: 3, display_name: "毒蜘蛛", description: "偶尔出现在小镇周围" },
+        ],
+        "KolimaForest" => vec![
+            EnemyConfig { name: "Wolf", level: 5, display_name: "灰狼", description: "柯利玛森林中的凶猛猎手" },
+            EnemyConfig { name: "Treant", level: 6, display_name: "树精", description: "森林深处的古老守卫" },
+            EnemyConfig { name: "Slime", level: 3, display_name: "史莱姆", description: "森林地面上常见的软体生物" },
+            EnemyConfig { name: "Mandrake", level: 7, display_name: "曼德拉草", description: "叫声能使人昏厥的危险植物" },
+            EnemyConfig { name: "Moth", level: 4, display_name: "蛾妖", description: "夜晚活动的诡异飞虫" },
+        ],
         "Cave" => vec![
             EnemyConfig { name: "Bat", level: 3, display_name: "蝙蝠", description: "" },
             EnemyConfig { name: "Golem", level: 7, display_name: "石巨人", description: "洞穴深处的岩石守卫" },

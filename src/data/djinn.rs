@@ -374,6 +374,12 @@ pub fn world_djinn() -> Vec<(DjinnId, &'static str, f32, f32)> {
         // SolSanctum — Laguna (Mars, ATK+), Undine (Mercury, DEF+Speed+)
         (DjinnId::Laguna, "SolSanctum", 4.0, 3.0),
         (DjinnId::Undine, "SolSanctum", 12.0, 10.0),
+        // Bilibin — Titania (Jupiter, Speed+), Laguna (Mars, ATK+)
+        (DjinnId::Titania, "Bilibin", 10.0, 10.0),
+        (DjinnId::Laguna, "Bilibin", 5.0, 15.0),
+        // KolimaForest — Amduscia (Jupiter, Atk+PP+), Grendel (Mars, HP+Def+)
+        (DjinnId::Amduscia, "KolimaForest", 12.0, 12.0),
+        (DjinnId::Grendel, "KolimaForest", 18.0, 8.0),
     ]
 }
 
@@ -622,9 +628,9 @@ mod tests {
     }
 
     #[test]
-    fn world_djinn_returns_eight_locations() {
+    fn world_djinn_returns_twelve_locations() {
         let djinn_locs = world_djinn();
-        assert_eq!(djinn_locs.len(), 8);
+        assert_eq!(djinn_locs.len(), 12);
     }
 
     #[test]

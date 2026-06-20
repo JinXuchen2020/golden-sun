@@ -147,6 +147,10 @@ pub struct Battle {
     pub turbo: bool,
     /// 伤害数字弹出列表
     pub popups: Vec<DamagePopup>,
+    /// 是否已使用过召唤
+    pub summon_used: bool,
+    /// 待命 Djinn 数量（已装备但未释放的 Djinn 数）
+    pub standby_djinn_count: usize,
 }
 
 /// 战斗统计
@@ -209,6 +213,8 @@ impl Battle {
             hit_shake: 0.0,
             turbo: false,
             popups: Vec::new(),
+            summon_used: false,
+            standby_djinn_count: 0,
         }
     }
 
@@ -350,6 +356,7 @@ impl Battle {
             BattleAction::Summon(summon_idx) => {
                 let summons = crate::data::summon::all_summons();
                 if let Some(summon) = summons.get(summon_idx) {
+                    self.summon_used = true;
                     let base_dmg = summon.base_damage(actor.level);
                     let mut dmg_results: Vec<(usize, u32)> = Vec::new();
                     for (ei, enemy) in self.enemies.iter().enumerate() {
@@ -517,6 +524,16 @@ impl Battle {
         if let Some(c) = arr.get_mut(idx) {
             c.pp = c.pp.saturating_sub(cost);
         }
+    }
+
+    /// 统计待命 Djinn 数量（已装备但未释放的 Djinn）
+    pub fn collect_standby_djinn_count(&self, collected: &[crate::data::djinn::OwnedDjinn]) -> usize {
+        collected.iter().filter(|d| d.equipped && !d.released).count()
+    }
+
+    /// 消耗待命 Djinn 数量（标记为已释放）
+    pub fn consume_standby_djinn(&mut self, count: usize) {
+        self.standby_djinn_count = self.standby_djinn_count.saturating_sub(count);
     }
 }
 

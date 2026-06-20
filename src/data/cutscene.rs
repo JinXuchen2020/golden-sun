@@ -47,8 +47,29 @@ pub struct Cutscene {
 
 /// 所有过场动画
 pub fn all_cutscenes() -> &'static [Cutscene] {
-    &[OPENING_CUTSCENE, AFTER_SANCTUM, LEAVE_VALE]
+    &[OPENING_PROLOGUE, OPENING_CUTSCENE, AFTER_SANCTUM, LEAVE_VALE]
 }
+
+// ── 序章（开场前） ──
+
+const PROLOGUE_DIALOG1: &str = "在遥远的古代，人类掌握了炼金术的力量。";
+const PROLOGUE_DIALOG2: &str = "地、水、火、风——四种元素之力被少数人操控，\n他们被称为「精灵使」(Adept)。";
+const PROLOGUE_DIALOG3: &str = "然而炼金术的力量过于强大，几乎将世界推向毁灭的边缘。";
+
+pub const OPENING_PROLOGUE: Cutscene = Cutscene {
+    id: "opening_prologue",
+    commands: &[
+        CutsceneCmd::FadeToBlack(1.5),
+        CutsceneCmd::AutoDialog(PROLOGUE_DIALOG1),
+        CutsceneCmd::Wait(1.0),
+        CutsceneCmd::AutoDialog(PROLOGUE_DIALOG2),
+        CutsceneCmd::Wait(1.0),
+        CutsceneCmd::AutoDialog(PROLOGUE_DIALOG3),
+        CutsceneCmd::Wait(1.0),
+        CutsceneCmd::FadeFromBlack(1.5),
+        CutsceneCmd::SetFlag("prologue_seen"),
+    ],
+};
 
 // ── 开场动画 ──
 
